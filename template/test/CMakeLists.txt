@@ -11,7 +11,7 @@ target_link_libraries(
 target_sources(
 	unit-tests
 	PRIVATE
-		"tests.cpp"
+		"test-compression.cpp"
 )
 
 # Automatically register all tests
