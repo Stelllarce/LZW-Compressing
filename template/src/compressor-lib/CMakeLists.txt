@@ -4,5 +4,8 @@ add_library(compressor-lib STATIC)
 target_sources(
 	compressor-lib
 	PRIVATE
-		"Compressor.h"
+		"Encoder.h"
+		"Encoder.cpp"
+		"Decoder.h"
+		"Decoder.cpp"
 )

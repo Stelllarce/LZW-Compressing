@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #
 add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/MP>)
 
-# Makes it e>asier to display some useful info
+# Makes it easier to display some useful info
 include(CMakePrintHelpers)
 
 # Uncomment the line below, if you want to specify additional
@@ -112,8 +112,10 @@ endif()
 # Add the src/ directory to the include path of all targets
 include_directories("src")
 
+# Library for expression processing
 add_subdirectory("src/compressor-lib")
 
+# Application
 add_subdirectory("src/application")
 
 # Unit tests

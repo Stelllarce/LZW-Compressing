@@ -1,4 +1,4 @@
-# Target for the main
+# Target for the simulator
 add_executable(main)
 
 target_link_libraries(
@@ -10,5 +10,5 @@ target_link_libraries(
 target_sources(
 	main
 	PRIVATE
-		"compress.cpp"
+		"main.cpp"
 )
