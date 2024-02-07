@@ -4,13 +4,15 @@
 Decoder::Decoder()
 {
     decode_table.reserve(TABLE_SIZE);
-    for (int i = 0; i < FIRST_INIT_SIZE; i++) 
-        decode_table[i] = std::string(1, i);
+    init_table();
 }
 
 // Decoding algorithm
 void Decoder::decode(std::ifstream& in, std::ofstream& out)
 {
+    if (!in.is_open() || !out.is_open())
+        throw std::runtime_error("File not open");
+
     int old_code; 
     in.read((char*)(&old_code), sizeof(int));
     out << decode_table[old_code].c_str();
@@ -38,15 +40,18 @@ void Decoder::decode(std::ifstream& in, std::ofstream& out)
     if(in.eof())
         in.clear();
     else
+        in.close(), out.close(),
         throw std::runtime_error("Error reading file");
 
     if(out.bad() || in.bad())
+        in.close(), out.close(),
         throw std::runtime_error("File error");
     
+    refresh_table();
 }
 
 // Print function for testing purposes
-#ifdef TEST
+#ifdef TESTING
 void Decoder::print_table(std::ostream& out) const
 {
     out << "---------------------------------\n";
@@ -56,3 +61,15 @@ void Decoder::print_table(std::ostream& out) const
         out << "\t" << elem.first << "\t\t" << elem.second << "\t\n";
 }
 #endif
+
+void Decoder::refresh_table()
+{
+    decode_table.clear();
+    init_table();
+}
+
+inline void Decoder::init_table()
+{
+    for (int i = 0; i < FIRST_INIT_SIZE; i++) 
+        decode_table[i] = std::string(1, i);
+}

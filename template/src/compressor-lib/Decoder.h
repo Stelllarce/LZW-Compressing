@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <cstring>
 
-#define TEST
+#define TESTING
 
 #define FIRST_INIT_SIZE 256 // Initializing the table with ASCII characters
 #define TABLE_SIZE 4095 // Maximum size of the table
@@ -22,11 +22,13 @@ public:
 
     void decode(std::ifstream&, std::ofstream&);
 
-    #ifdef TEST
+    #ifdef TESTING
     void print_table(std::ostream&) const;
     #endif
 
-private:
+protected:
+    void refresh_table();
+    void init_table();
     std::unordered_map<int, std::string> decode_table;
 };
 
