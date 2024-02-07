@@ -10,7 +10,7 @@ inline void help()
 {
     std::cout << "Available commands:\n";
     std::cout << "ZIP <path-of-created-archive> <file1 file2 ...> - compress a file\n";
-    std::cout << "UNZIP <path-of-archive> <files1 file2 ...>/(can use # to extract all) - decompress an archive\n";
+    std::cout << "UNZIP <path-of-archive> <path-of-extraction> <files1 file2 ...>/(can use # to extract all) - decompress an archive\n";
     std::cout << "INFO <name-of-archive> - display a list with compressed files\n";
     std::cout << "REFRESH <name-of-archive> - refresh an archive with its new version\n";
     std::cout << "EC <name-of-archive> - check for damaged file in an archive\n"; 
@@ -27,6 +27,7 @@ void executeZIP(std::stringstream& ss, Archiver& archiver)
         files.push_back(file);
     
     archiver.zip(archive_name, files);
+    std::cout << "Files compressed.\n";
 }
 
 void executeUNZIP(std::stringstream& ss, Archiver& archiver)
