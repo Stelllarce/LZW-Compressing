@@ -17,14 +17,14 @@ class Encoder {
 public:
     Encoder();
 
-    void encode(std::ifstream&, std::ofstream&);
+    void encode(std::ifstream&, std::fstream&);
 
     #ifdef TESTING
     void print_table(std::ostream&) const;
     #endif
 
-protected:
     void refresh_table();
+protected:
     void init_table();
     std::unordered_map<std::string, int> encode_table;
 };

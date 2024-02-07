@@ -8,7 +8,7 @@ Encoder::Encoder()
 }
 
 // Encoding algorithm
-void Encoder::encode(std::ifstream& in, std::ofstream& out)
+void Encoder::encode(std::ifstream& in, std::fstream& out)
 {
     if (!in.is_open() || !out.is_open())
         throw std::runtime_error("File not open");
