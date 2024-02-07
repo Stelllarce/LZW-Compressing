@@ -21,6 +21,9 @@ void Decoder::decode(std::ifstream& in, std::ofstream& out)
     int new_code;
     while (in.read((char*)(&new_code), sizeof(int)))
     {
+        if (new_code == DELIMITER)
+            break;
+
         if (decode_table.find(new_code) == decode_table.end())
         {
             s = decode_table[old_code];
@@ -37,13 +40,13 @@ void Decoder::decode(std::ifstream& in, std::ofstream& out)
         old_code = new_code;
     }
 
-    if(in.eof())
+    if (!in.good())
+    {
+        in.seekg(0, std::ios::beg);
         in.clear();
-    else
-        in.close(), out.close(),
-        throw std::runtime_error("Error reading file");
+    }
 
-    if(out.bad() || in.bad())
+    if (out.bad() || in.bad())
         in.close(), out.close(),
         throw std::runtime_error("File error");
     

@@ -12,6 +12,7 @@
 #include <cstring>
 
 #define TESTING
+#define DELIMITER -1
 
 #define FIRST_INIT_SIZE 256 // Initializing the table with ASCII characters
 #define TABLE_SIZE 4095 // Maximum size of the table
