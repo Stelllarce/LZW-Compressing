@@ -8,4 +8,6 @@ target_sources(
 		"Encoder.cpp"
 		"Decoder.h"
 		"Decoder.cpp"
+		"Archiver.h"
+		"Archiver.cpp"
 )
