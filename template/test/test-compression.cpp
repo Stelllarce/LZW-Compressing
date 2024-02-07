@@ -54,7 +54,7 @@ inline void testEncode(const char* refrence_file_path, const char* compressed_fi
 {
     std::ifstream in;
     in.open(refrence_file_path, std::ios::binary | std::ios::in);
-    std::ofstream out;
+    std::fstream out;
     out.open(compressed_file_path, std::ios::binary | std::ios::out | std::ios::trunc);
 
     REQUIRE(in.is_open());
@@ -132,13 +132,14 @@ TEST_CASE("Testing if decoding process works correctly")
     testDecode(test_encoded3, test_decoded3, test_input3);
 }
 
-TEST_CASE("Testing archiver")
+TEST_CASE("Testing archiver zip")
 {
     Archiver archiver;
     std::vector<std::string> files = {test_input, test_input2, test_input3};
     std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
 
     REQUIRE_NOTHROW(archiver.zip(archive_name, files));
+    
     std::ifstream archive;
     archive.open(archive_name, std::ios::binary | std::ios::in);
 
@@ -148,7 +149,7 @@ TEST_CASE("Testing archiver")
     {
         int number_of_files, expected_num_files = files.size();
         archive.read((char*)(&number_of_files), sizeof(number_of_files));
-        REQUIRE(number_of_files == expected_num_files);
+        CHECK(number_of_files == expected_num_files);
     }
 
     SECTION("Checking if saved file path is correct")
@@ -161,21 +162,27 @@ TEST_CASE("Testing archiver")
         
         char* path = new char[path_length + 1];
         archive.read(path, path_length);
-        path[path_length] = '\0';        archive.seekg(sizeof(int) * 2 + files[0].size(), std::ios::cur);
+        path[path_length] = '\0';       
+        archive.seekg(sizeof(int) * 2 + files[0].size(), std::ios::cur);
 
         std::string path_str(path);
         delete[] path;
 
-        REQUIRE(path_str == files[0]);
+        CHECK(path_str == files[0]);
     }
 
     SECTION("Checking if saved file content is correct and delimiter is correctly read")
     {
         const int delimiter = -1;
         std::vector<int> input, expected = {66, 65, 256, 257, 65, 260};
-        int current;
+        int current, file_size;
         archive.seekg(sizeof(int) * 2, std::ios::cur); // skip number of files and file name lenght
         archive.seekg(files[0].size(), std::ios::cur); // skip file name
+
+        archive.read((char*)(&file_size), sizeof(file_size));
+
+        CHECK(file_size == expected.size() * sizeof(int));
+
         while (archive.read((char*)(&current), sizeof(current)))
         {
             if (current == delimiter)
@@ -187,4 +194,9 @@ TEST_CASE("Testing archiver")
         
         CHECK(input == expected);
     }
+}
+
+TEST_CASE("Testing archiver unzip")
+{
+
 }
