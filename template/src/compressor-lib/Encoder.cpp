@@ -1,40 +1,46 @@
 #include "Encoder.h"
 
-// Constructor for the encoder, initializing the table with ASCII characters
 Encoder::Encoder()
 {
     encode_table.reserve(TABLE_SIZE);
     init_table();
 }
 
-// Encoding algorithm
+// Encoding to a .lzw file
 void Encoder::encode(std::ifstream& in, std::fstream& out)
 {
     if (!in.is_open() || !out.is_open())
         throw std::runtime_error("File not open");
 
-    std::string repeating = "";
-    char read;
+    std::string repeating = ""; // Repeating string
+    char read; // Currently read character
     while (in.get(read))
     {
+        // Concat the previous with current char
         std::string concat = repeating + read;
-        if (encode_table.find(concat) != encode_table.end())
+        // If the concat is not in the table
+        if (encode_table.find(concat) == encode_table.end())
         {
-            repeating = concat;
+            // Output code
+            out.write((char*)(&encode_table[repeating]), sizeof(int));
+            // Write code to the table
+            if (encode_table.size() < TABLE_SIZE)
+                encode_table[concat] = encode_table.size();
+            // Update repeating
+            repeating = read;
         }
         else
         {
-            out.write((char*)(&encode_table[repeating]), sizeof(int));
-            if (encode_table.size() < TABLE_SIZE)
-                encode_table[concat] = encode_table.size();
-            repeating = read;
+            // Update repeating
+            repeating = concat;
         }
     }
-        
-        
+
+    // Write the last repeating string
     if (!repeating.empty())
         out.write((char*)(&encode_table[repeating]), sizeof(int));
     
+    // Clear flags at the end of file
     if(in.eof())
         in.clear();
     else
@@ -45,6 +51,7 @@ void Encoder::encode(std::ifstream& in, std::fstream& out)
         in.close(), out.close(),
         throw std::runtime_error("File error");
 
+    // Refresh the table to reuse same object
     refresh_table();
 }
 
@@ -61,12 +68,14 @@ void Encoder::print_table(std::ostream& out) const
 }
 #endif
 
+// Refreshing the code table
 void Encoder::refresh_table()
 {
     encode_table.clear();
     init_table();
 }
 
+// Initializing the table
 inline void Encoder::init_table()
 {
     for (int i = 0; i < FIRST_INIT_SIZE; i++)
