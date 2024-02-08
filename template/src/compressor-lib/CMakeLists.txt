@@ -10,4 +10,6 @@ target_sources(
 		"Decoder.cpp"
 		"Archiver.h"
 		"Archiver.cpp"
+		"Interface.h"
+		"Interface.cpp"
 )
