@@ -1,5 +1,6 @@
 #include "catch2/catch_all.hpp"
 #include "compressor-lib/Archiver.h"
+#include "compressor-lib/Path.h"
 #include <sstream>
 
 const char* test_input = "../../template/test/test_files/test_input.txt";
@@ -14,11 +15,65 @@ const char* test_decoded = "../../template/test/test_files/test_output/test_deco
 const char* test_decoded2 = "../../template/test/test_files/test_output/test_decoded2.txt";
 const char* test_decoded3 = "../../template/test/test_files/test_output/test_decoded3.txt";
 
+// ------------Path test cases for UNIX----------------
+
+TEST_CASE("Second path is longer than the first (Unix)")
+{
+    std::string base = "/home/user/documents.txt";
+    std::string path = "/home/user/etc/file.txt";
+    std::string expected = "etc/file.txt";
+    CHECK(Path::getRelativePath(base, path, OS::UNIX) == expected);
+}
+
+TEST_CASE("First path is longer than the second (Unix)")
+{
+    std::string base = "/home/user/etc/file.txt";
+    std::string path = "/home/user/documents.txt";
+    std::string expected = "documents.txt";
+    CHECK(Path::getRelativePath(base, path, OS::UNIX) == expected);
+}
+
+TEST_CASE("Paths are equal (Unix)")
+{
+    std::string base = "/home/user/etc/file.txt";
+    std::string path = "/home/user/etc/file.txt";
+    std::string expected = "file.txt";
+    CHECK(Path::getRelativePath(base, path, OS::UNIX) == expected);
+}
+
+// ------------Path test cases for WINDOWS----------------
+
+TEST_CASE("Second path is longer than the first (Windows)")
+{
+    std::string base = "C:\\Users\\user\\documents.txt";
+    std::string path = "C:\\Users\\user\\etc\\file.txt";
+    std::string expected = "etc\\file.txt";
+    CHECK(Path::getRelativePath(base, path, OS::WINDOWS) == expected);
+}
+
+TEST_CASE("First path is longer than the second (Windows)")
+{
+    std::string base = "C:\\Users\\user\\etc\\file.txt";
+    std::string path = "C:\\Users\\user\\documents.txt";
+    std::string expected = "documents.txt";
+    CHECK(Path::getRelativePath(base, path, OS::WINDOWS) == expected);
+}
+
+TEST_CASE("Paths are equal (Windows)")
+{
+    std::string base = "C:\\Users\\user\\etc\\file.txt";
+    std::string path = "C:\\Users\\user\\etc\\file.txt";
+    std::string expected = "file.txt";
+    CHECK(Path::getRelativePath(base, path, OS::WINDOWS) == expected);
+}
+
+// ------------Encoder and Decoder test cases----------------
+
 TEST_CASE("Testing if encoder table is initialized correctly")
 {
     Encoder enc;
     std::stringstream output;
-    enc.print_table(output);
+    enc.printTable(output);
     REQUIRE_FALSE(output.str() == "");
 }
 
@@ -26,7 +81,7 @@ TEST_CASE("Testing if decoder table is initialized correctly")
 {
     Decoder dec;
     std::stringstream output;
-    dec.print_table(output);
+    dec.printTable(output);
     REQUIRE_FALSE(output.str() == "");
 }
 
@@ -71,7 +126,7 @@ inline void testEncode(Encoder& enc, const char* refrence_file_path, const char*
     testEncodeResults(compressed_file_path, expected);
 }
 
-TEST_CASE("Testing if encoding process is working correctly")
+TEST_CASE("Encoding works correctly with different files")
 {
     Encoder enc;
     std::vector<int> expected = {66, 65, 256, 257, 65, 260};
@@ -124,7 +179,7 @@ inline void testDecode(Decoder& dec, const char* compressed_file_path, const cha
     testDecodeResults(result_file_path, refrence_file_path);
 }
 
-TEST_CASE("Testing if decoding process works correctly")
+TEST_CASE("Decoding works correctly with different files")
 {
     Decoder dec;
     testDecode(dec, test_encoded, test_decoded, test_input);
@@ -132,7 +187,9 @@ TEST_CASE("Testing if decoding process works correctly")
     testDecode(dec, test_encoded3, test_decoded3, test_input3);
 }
 
-TEST_CASE("Testing archiver zip")
+// ------------Archiver test cases----------------
+
+TEST_CASE("Archiver zip")
 {
     Archiver archiver;
     std::vector<std::string> files = {test_input, test_input2, test_input3};
@@ -145,14 +202,14 @@ TEST_CASE("Testing archiver zip")
 
     REQUIRE(archive.is_open());
 
-    SECTION("Checking if saved number of files is correct")
+    SECTION("Saved number of files is correct")
     {
         int number_of_files, expected_num_files = files.size();
         archive.read((char*)(&number_of_files), sizeof(number_of_files));
         CHECK(number_of_files == expected_num_files);
     }
 
-    SECTION("Checking if saved file path is correct")
+    SECTION("Saved file path is correct")
     {
         int path_length;
         archive.seekg(sizeof(int), std::ios::cur); // skip number of files
@@ -171,7 +228,7 @@ TEST_CASE("Testing archiver zip")
         CHECK(path_str == files[0]);
     }
 
-    SECTION("Checking if saved file content is correct and delimiter is correctly read")
+    SECTION("Saved file content is correct and delimiter is correctly read")
     {
         int read_bytes = 0;
         std::vector<int> input, expected = {66, 65, 256, 257, 65, 260};
@@ -195,7 +252,7 @@ TEST_CASE("Testing archiver zip")
     }
 }
 
-TEST_CASE("Testing archiver unzip")
+TEST_CASE("Archiver unzip")
 {
     Archiver archiver;
     std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
