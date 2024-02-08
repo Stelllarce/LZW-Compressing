@@ -123,3 +123,21 @@ if(BUILD_TESTING)
   include(Catch)
   add_subdirectory("test")
 endif()
+
+# Run the bash script to delete tempsautomatically on each build
+# This is useful for testing 
+# The script is located in the test/test_files/test_output directory
+# It may not work on Windows, so it can be commented out
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/test/test_files/test_output/dummy.txt
+    COMMAND bash ${CMAKE_SOURCE_DIR}/test/test_files/test_output/delete_temps.sh
+    COMMENT "Deleting temporary files..."
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test/test_files/test_output
+)
+
+add_custom_target(
+    RunDeleteScript ALL
+    DEPENDS ${CMAKE_SOURCE_DIR}/test/test_files/test_output/dummy.txt
+)
+
+add_dependencies(unit-tests RunDeleteScript)
