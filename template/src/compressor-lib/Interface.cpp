@@ -56,7 +56,9 @@ void Interface::run()
         }
         else if (command == "INFO")
         {
-            // display a list with compressed files
+            std::string archive_name;
+            ss >> archive_name;
+            archiver.info(archive_name);
         }
         else if (command == "REFRESH")
         {
