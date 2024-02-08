@@ -50,7 +50,7 @@ inline void testEncodeResults(const char* result_path, std::vector<int>& expecte
 
 }
 
-inline void testEncode(const char* refrence_file_path, const char* compressed_file_path, std::vector<int>& expected) 
+inline void testEncode(Encoder& enc, const char* refrence_file_path, const char* compressed_file_path, std::vector<int>& expected) 
 {
     std::ifstream in;
     in.open(refrence_file_path, std::ios::binary | std::ios::in);
@@ -60,7 +60,6 @@ inline void testEncode(const char* refrence_file_path, const char* compressed_fi
     REQUIRE(in.is_open());
     REQUIRE(out.is_open());
 
-    Encoder enc;
     REQUIRE_NOTHROW(enc.encode(in, out));
 
     REQUIRE(in.good());
@@ -74,12 +73,13 @@ inline void testEncode(const char* refrence_file_path, const char* compressed_fi
 
 TEST_CASE("Testing if encoding process is working correctly")
 {
+    Encoder enc;
     std::vector<int> expected = {66, 65, 256, 257, 65, 260};
     std::vector<int> expected2 = {87, 89, 83, 42, 256, 71, 256, 258, 262, 262, 71};
     std::vector<int> expected3 = {119, 97, 256, 87, 65, 259, 87, 32, 65, 42, 65, 68, 266, 268, 259, 267, 42, 94, 260, 267, 273, 83, 68, 39, 268, 83, 266, 115, 261, 65};
-    testEncode(test_input, test_encoded, expected);
-    testEncode(test_input2, test_encoded2, expected2);
-    testEncode(test_input3, test_encoded3, expected3);
+    testEncode(enc, test_input, test_encoded, expected);
+    testEncode(enc, test_input2, test_encoded2, expected2);
+    testEncode(enc, test_input3, test_encoded3, expected3);
 }
 
 inline void testDecodeResults(const char* result_path, const char* refrence_file_path) 
@@ -103,7 +103,7 @@ inline void testDecodeResults(const char* result_path, const char* refrence_file
     CHECK(refrence_data.str() == result_data.str());
 }
 
-inline void testDecode(const char* compressed_file_path, const char* result_file_path, const char* refrence_file_path) 
+inline void testDecode(Decoder& dec, const char* compressed_file_path, const char* result_file_path, const char* refrence_file_path) 
 {
     std::ifstream in;
     in.open(compressed_file_path, std::ios::binary | std::ios::in);
@@ -113,7 +113,6 @@ inline void testDecode(const char* compressed_file_path, const char* result_file
     REQUIRE(in.is_open());
     REQUIRE(out.is_open());
 
-    Decoder dec;
     REQUIRE_NOTHROW(dec.decode(in, out));
 
     REQUIRE(in.good());
@@ -127,9 +126,10 @@ inline void testDecode(const char* compressed_file_path, const char* result_file
 
 TEST_CASE("Testing if decoding process works correctly")
 {
-    testDecode(test_encoded, test_decoded, test_input);
-    testDecode(test_encoded2, test_decoded2, test_input2);
-    testDecode(test_encoded3, test_decoded3, test_input3);
+    Decoder dec;
+    testDecode(dec, test_encoded, test_decoded, test_input);
+    testDecode(dec, test_encoded2, test_decoded2, test_input2);
+    testDecode(dec, test_encoded3, test_decoded3, test_input3);
 }
 
 TEST_CASE("Testing archiver zip")
@@ -173,7 +173,7 @@ TEST_CASE("Testing archiver zip")
 
     SECTION("Checking if saved file content is correct and delimiter is correctly read")
     {
-        const int delimiter = -1;
+        int read_bytes = 0;
         std::vector<int> input, expected = {66, 65, 256, 257, 65, 260};
         int current, file_size;
         archive.seekg(sizeof(int) * 2, std::ios::cur); // skip number of files and file name lenght
@@ -185,11 +185,10 @@ TEST_CASE("Testing archiver zip")
 
         while (archive.read((char*)(&current), sizeof(current)))
         {
-            if (current == delimiter)
-            {
+            if (read_bytes >= file_size)
                 break;
-            }
             input.push_back(current);
+            read_bytes += sizeof(current);
         }
         
         CHECK(input == expected);
@@ -198,5 +197,10 @@ TEST_CASE("Testing archiver zip")
 
 TEST_CASE("Testing archiver unzip")
 {
+    Archiver archiver;
+    std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
+    std::string extract_to = "../../template/test/test_files/test_output";
+    std::set<std::string> files_to_extract = {test_input, test_input3};
 
+    REQUIRE_NOTHROW(archiver.unzip(archive_name, extract_to, files_to_extract));
 }
