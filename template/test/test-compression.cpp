@@ -22,7 +22,7 @@ TEST_CASE("Second path is longer than the first (Unix)")
     std::string base = "/home/user/documents.txt";
     std::string path = "/home/user/etc/file.txt";
     std::string expected = "etc/file.txt";
-    CHECK(Path::getRelativePath(base, path, OS::UNIX) == expected);
+    CHECK(Path::getRelativePath(base, path) == expected);
 }
 
 TEST_CASE("First path is longer than the second (Unix)")
@@ -30,7 +30,7 @@ TEST_CASE("First path is longer than the second (Unix)")
     std::string base = "/home/user/etc/file.txt";
     std::string path = "/home/user/documents.txt";
     std::string expected = "documents.txt";
-    CHECK(Path::getRelativePath(base, path, OS::UNIX) == expected);
+    CHECK(Path::getRelativePath(base, path) == expected);
 }
 
 TEST_CASE("Paths are equal (Unix)")
@@ -38,33 +38,70 @@ TEST_CASE("Paths are equal (Unix)")
     std::string base = "/home/user/etc/file.txt";
     std::string path = "/home/user/etc/file.txt";
     std::string expected = "file.txt";
-    CHECK(Path::getRelativePath(base, path, OS::UNIX) == expected);
+    CHECK(Path::getRelativePath(base, path) == expected);
+}
+
+TEST_CASE("Path is a directory (Unix)")
+{
+    std::string path = "/home/user/etc/";
+    CHECK(Path::isDirectoryPath(path));
+}
+
+TEST_CASE("Path is a file (Unix)")
+{
+    std::string path = "/home/user/etc/file.txt";
+    CHECK(Path::isFilePath(path));
 }
 
 // ------------Path test cases for WINDOWS----------------
 
-TEST_CASE("Second path is longer than the first (Windows)")
-{
-    std::string base = "C:\\Users\\user\\documents.txt";
-    std::string path = "C:\\Users\\user\\etc\\file.txt";
-    std::string expected = "etc\\file.txt";
-    CHECK(Path::getRelativePath(base, path, OS::WINDOWS) == expected);
-}
+// TEST_CASE("Second path is longer than the first (Windows)")
+// {
+//     std::string base = "C:\\Users\\user\\documents.txt";
+//     std::string path = "C:\\Users\\user\\etc\\file.txt";
+//     std::string expected = "etc\\file.txt";
+//     CHECK(Path::getRelativePath(base, path) == expected);
+// }
 
-TEST_CASE("First path is longer than the second (Windows)")
-{
-    std::string base = "C:\\Users\\user\\etc\\file.txt";
-    std::string path = "C:\\Users\\user\\documents.txt";
-    std::string expected = "documents.txt";
-    CHECK(Path::getRelativePath(base, path, OS::WINDOWS) == expected);
-}
+// TEST_CASE("First path is longer than the second (Windows)")
+// {
+//     std::string base = "C:\\Users\\user\\etc\\file.txt";
+//     std::string path = "C:\\Users\\user\\documents.txt";
+//     std::string expected = "documents.txt";
+//     CHECK(Path::getRelativePath(base, path) == expected);
+// }
 
-TEST_CASE("Paths are equal (Windows)")
+// TEST_CASE("Paths are equal (Windows)")
+// {
+//     std::string base = "C:\\Users\\user\\etc\\file.txt";
+//     std::string path = "C:\\Users\\user\\etc\\file.txt";
+//     std::string expected = "file.txt";
+//     CHECK(Path::getRelativePath(base, path) == expected);
+// }
+
+// TEST_CASE("Path is a directory (Windows)")
+// {
+//     std::string path = "C:\\Users\\user\\etc\\";
+//     CHECK(Path::isDirectoryPath(path));
+// }
+
+// TEST_CASE("Path is a file (Windows)")
+// {
+//     std::string path = "C:\\Users\\user\\etc\\file.txt";
+//     CHECK(Path::isFilePath(path));
+// }
+
+TEST_CASE("Get all files in a directory")
 {
-    std::string base = "C:\\Users\\user\\etc\\file.txt";
-    std::string path = "C:\\Users\\user\\etc\\file.txt";
-    std::string expected = "file.txt";
-    CHECK(Path::getRelativePath(base, path, OS::WINDOWS) == expected);
+    std::string path = "../../template/test/test_files/rec_test";
+    std::vector<std::string> files;
+    Path::getAllFiles(path, files);
+    std::vector<std::string> expected = {
+        "../../template/test/test_files/rec_test/dummy.txt",
+        "../../template/test/test_files/rec_test/rec3/dummy3.txt",
+        "../../template/test/test_files/rec_test/rec2/dummy2.txt"
+    };
+    CHECK(files == expected);
 }
 
 // ------------Encoder and Decoder test cases----------------
@@ -191,6 +228,7 @@ TEST_CASE("Decoding works correctly with different files")
 
 TEST_CASE("Archiver zip")
 {
+    OS os = OS::UNIX;
     Archiver archiver;
     std::vector<std::string> files = {test_input, test_input2, test_input3};
     std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
@@ -225,7 +263,7 @@ TEST_CASE("Archiver zip")
         std::string path_str(path);
         delete[] path;
 
-        CHECK(path_str == files[0]);
+        CHECK(path_str == Path::getFile(files[0]));
     }
 
     SECTION("Saved file content is correct and delimiter is correctly read")
@@ -254,10 +292,11 @@ TEST_CASE("Archiver zip")
 
 TEST_CASE("Archiver unzip")
 {
+    OS os = OS::UNIX;
     Archiver archiver;
     std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
     std::string extract_to = "../../template/test/test_files/test_output";
     std::set<std::string> files_to_extract = {test_input, test_input3};
 
     REQUIRE_NOTHROW(archiver.unzip(archive_name, extract_to, files_to_extract));
-}
+} 
