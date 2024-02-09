@@ -4,12 +4,12 @@ OS Path::os = CURR_SYSTEM;
 
 bool Path::isDirectoryPath(const std::string& path)
 {
-    return path.rfind('.') > path.rfind((os == OS::UNIX ? '/' : '\\')) || path.rfind('.') == std::string::npos;
+    return path.rfind('.') < path.rfind((os == OS::UNIX ? '/' : '\\')) || path.rfind('.') == std::string::npos;
 }
 
 bool Path::isFilePath(const std::string& path)
 {
-    return path.rfind('.') > path.rfind((os == OS::UNIX ? '/' : '\\'));
+    return path.rfind('.') > path.rfind((os == OS::UNIX ? '/' : '\\')) && path.rfind('.') != std::string::npos;
 }
 
 /**
