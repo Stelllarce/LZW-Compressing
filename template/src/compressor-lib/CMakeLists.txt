@@ -12,4 +12,6 @@ target_sources(
 		"Archiver.cpp"
 		"Interface.h"
 		"Interface.cpp"
+		"Path.h"
+		"Path.cpp"
 )
