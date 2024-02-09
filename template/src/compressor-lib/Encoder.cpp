@@ -3,7 +3,7 @@
 Encoder::Encoder()
 {
     encode_table.reserve(TABLE_SIZE);
-    init_table();
+    initTable();
 }
 
 // Encoding to a .lzw file
@@ -52,12 +52,12 @@ void Encoder::encode(std::ifstream& in, std::fstream& out)
         throw std::runtime_error("File error");
 
     // Refresh the table to reuse same object
-    refresh_table();
+    refreshTable();
 }
 
 // Print function for testing purposes
 #ifdef TESTING
-void Encoder::print_table(std::ostream& out) const 
+void Encoder::printTable(std::ostream& out) const 
 {
     out << "---------------------------------\n";
     out << "|\tKey\t|\tValue\t|\n";
@@ -69,14 +69,14 @@ void Encoder::print_table(std::ostream& out) const
 #endif
 
 // Refreshing the code table
-void Encoder::refresh_table()
+void Encoder::refreshTable()
 {
     encode_table.clear();
-    init_table();
+    initTable();
 }
 
 // Initializing the table
-inline void Encoder::init_table()
+inline void Encoder::initTable()
 {
     for (int i = 0; i < FIRST_INIT_SIZE; i++)
         encode_table[std::string(1, i)] = i;

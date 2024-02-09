@@ -22,15 +22,15 @@ public:
 
     // Print function for testing
     #ifdef TESTING
-    void print_table(std::ostream&) const;
+    void printTable(std::ostream&) const;
     #endif
 
 protected:
     // Reinitializes the table
-    void refresh_table();
+    void refreshTable();
     
     // Initializes the table
-    void init_table();
+    void initTable();
 
     // Table for encoding
     std::unordered_map<std::string, int> encode_table;
