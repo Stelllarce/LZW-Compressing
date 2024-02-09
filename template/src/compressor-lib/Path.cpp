@@ -1,13 +1,88 @@
 #include "Path.h"
 
-std::string Path::getRelativePath(const std::string& base, const std::string& path, OS os)
+OS Path::os = CURR_SYSTEM;
+
+bool Path::isDirectoryPath(const std::string& path)
+{
+    return path.rfind('.') > path.rfind((os == OS::UNIX ? '/' : '\\')) || path.rfind('.') == std::string::npos;
+}
+
+bool Path::isFilePath(const std::string& path)
+{
+    return path.rfind('.') > path.rfind((os == OS::UNIX ? '/' : '\\'));
+}
+
+/**
+ * @brief Gets all files in a directory and its subdirectories
+ * 
+ * @param path - directory path
+ * @param files - vector to store the file names
+ * @param os - operating system
+ */
+void Path::getAllFiles(const std::string& path, std::vector<std::string>& files)
+{
+    for (const auto & entry : std::filesystem::directory_iterator(path))
+    {
+        if (isFilePath(entry.path().string()))
+        {
+            files.push_back(entry.path().string());
+        }
+        else
+        {
+            getAllFiles(entry.path().string(), files);
+        }
+    }    
+}
+
+/**
+ * @brief Gets the path part of a full path and file
+ * 
+ * @param path - full path and file name
+ * @param os - operating system
+*/
+std::string Path::getPath(const std::string& path)
+{
+    std::string result = "";
+    char delim = os == OS::UNIX ? '/' : '\\';
+
+    std::size_t last = path.find_last_of(delim);
+    if (last != std::string::npos)
+        result = path.substr(0, last);
+
+    return result;
+}
+
+/**
+ * @brief Gets the file part of a full path and file
+ * 
+ * @param path - full path and file name
+ * @param os - operating system
+*/
+std::string Path::getFile(const std::string& path)
+{
+    std::string result = "";
+    char delim = os == OS::UNIX ? '/' : '\\';
+
+    std::size_t last = path.find_last_of(delim);
+    if (last != std::string::npos)
+        result = path.substr(last + 1);
+
+    return result;
+}
+
+/**
+ * @brief Outputs the relative path of second file in terms of the first
+ * 
+ * @param base - base path
+ * @param path - path to get relative to base
+ * @param os - operating system
+*/
+std::string Path::getRelativePath(const std::string& base, const std::string& path)
 {
     char delim = os == OS::UNIX ? '/' : '\\';
     if (base == path) 
     {
-        std::size_t last = path.find_last_of(delim);
-        if (last != std::string::npos)
-            return path.substr(last + 1);
+        return getFile(base);
     }
 
     std::queue<std::string> base_dirs;
@@ -59,4 +134,18 @@ std::string Path::getRelativePath(const std::string& base, const std::string& pa
     }
 
     return relative;
+}
+
+/**
+ * @brief Creates a directory
+ * 
+ * @param dest - destination directory
+ * @param dirs_to_create - directories to be created
+ * @param os - operating system
+*/
+std::string Path::createDirectory(const std::string& dest, const std::string& dirs_to_create)
+{
+    std::string path = dest + (os == OS::UNIX ? "/" : "\\") + dirs_to_create;
+    std::filesystem::create_directories(path);
+    return path;
 }
