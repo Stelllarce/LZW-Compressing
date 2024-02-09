@@ -3,7 +3,7 @@
 Decoder::Decoder()
 {
     decode_table.reserve(TABLE_SIZE); // Reserve space for the table
-    init_table(); // Initialize the table
+    initTable(); // Initialize the table
 }
 
 /**
@@ -70,13 +70,13 @@ void Decoder::decode(std::ifstream& in, std::ofstream& out, int read_size)
     }
     
     // Refresh the table to reuse same object
-    refresh_table();
+    refreshTable();
 }
 
 // Printing table for testing
 // Works if TESTING is enabled
 #ifdef TESTING
-void Decoder::print_table(std::ostream& out) const
+void Decoder::printTable(std::ostream& out) const
 {
     out << "---------------------------------\n";
     out << "|\tKey\t|\tValue\t|\n";
@@ -87,14 +87,14 @@ void Decoder::print_table(std::ostream& out) const
 #endif
 
 // Refreshing the code table
-void Decoder::refresh_table()
+void Decoder::refreshTable()
 {
     decode_table.clear();
-    init_table();
+    initTable();
 }
 
 // Initializing the table
-inline void Decoder::init_table()
+inline void Decoder::initTable()
 {
     for (int i = 0; i < FIRST_INIT_SIZE; i++) 
         decode_table[i] = std::string(1, i);
