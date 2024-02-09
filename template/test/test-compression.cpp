@@ -45,12 +45,14 @@ TEST_CASE("Path is a directory (Unix)")
 {
     std::string path = "/home/user/etc/";
     CHECK(Path::isDirectoryPath(path));
+    CHECK_FALSE(Path::isFilePath(path));
 }
 
 TEST_CASE("Path is a file (Unix)")
 {
     std::string path = "/home/user/etc/file.txt";
     CHECK(Path::isFilePath(path));
+    CHECK_FALSE(Path::isDirectoryPath(path));
 }
 
 // ------------Path test cases for WINDOWS----------------
