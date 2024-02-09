@@ -3,6 +3,7 @@
 
 #include "Encoder.h"
 #include "Decoder.h"
+#include "Path.h"
 #include <vector>
 #include <set>
 #include <filesystem>
@@ -27,8 +28,6 @@ public:
     // Checks for damaged file in an archive
     void errorCheck(const std::string&);
 private:
-    // Skips a file in the archive(needed for unzip)
-    void skip_file(std::ifstream&);
 
     // Unzips all files from the archive
     void unzipAll(const int, std::ifstream&, const std::string&);

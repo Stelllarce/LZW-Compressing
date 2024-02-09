@@ -32,7 +32,7 @@ void Archiver::zip(std::string& archive_name, const std::vector<std::string>& fi
         int path_length = file.size();
         archive.write((char*)(&path_length), sizeof(path_length));
         // Write the path/name of the file that is being written
-        archive.write(file.c_str(), path_length);
+        archive.write(Path::getFile(file).c_str(), path_length);
 
         // Open the file to be compressed
         std::ifstream to_compress(file, std::ios::binary);
@@ -89,12 +89,11 @@ void Archiver::unzipAll(const int num_files, std::ifstream& archive, const std::
         int file_size;
         archive.read((char*)(&file_size), sizeof(file_size));
 
-        // TODO: figure out how to create directories and not duplicate existing ones
-        std::filesystem::path full_extr_pth = std::filesystem::path(extract_to) / std::filesystem::path(file_path);
-        std::filesystem::create_directories(full_extr_pth.parent_path());
-
+        std::string full_extr_path = Path::createDirectory(extract_to, Path::getPath(file_path)); // Create the directory structure
+        full_extr_path += Path::getFile(file_path); // Append the file name to the directory structure
+        
         // File to be restored
-        std::ofstream to_decompress(full_extr_pth, std::ios::binary);
+        std::ofstream to_decompress(full_extr_path, std::ios::binary);
 
         if (!to_decompress.is_open())
             throw std::runtime_error("Failed to create file to extract");
@@ -139,9 +138,8 @@ void Archiver::unzipSelected(std::ifstream& archive, const std::string& extract_
             continue;
         }
 
-        // TODO: figure out how to create directories and not duplicate existing ones
-        // std::filesystem::path full_extr_pth = extract_to / std::filesystem::path(file_path);
-        // std::filesystem::create_directories(full_extr_pth.parent_path());
+        std::string full_extr_path = Path::createDirectory(extract_to, Path::getPath(file_path)); // Create the directory structure
+        full_extr_path += Path::getFile(file_path); // Append the file name to the directory structure
 
         // File to be restored
         std::ofstream to_decompress(file_path, std::ios::binary);
