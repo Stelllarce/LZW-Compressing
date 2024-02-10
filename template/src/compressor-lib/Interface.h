@@ -7,9 +7,9 @@
 class Interface
 {
 public:
+    static void display();
+    static void help();
     static void run();
-private:
-    static void command();
 };
 
 #endif // _INTERFACE_H_

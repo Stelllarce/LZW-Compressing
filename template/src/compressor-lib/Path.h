@@ -7,13 +7,14 @@
 #include <filesystem>
 #include <sys/stat.h>
 
-#define CURR_SYSTEM OS::UNIX // Change this to OS::WINDOWS if you are using Windows
-
 enum class OS
 {
     UNIX,
     WINDOWS
 };
+
+#define CURR_SYSTEM OS::UNIX // Change this to OS::WINDOWS if you are using Windows
+// #define CURR_SYSTEM OS::WINDOWS 
 
 // Path methods
 class Path

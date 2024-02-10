@@ -1,13 +1,13 @@
 #include "Interface.h"
 
-inline void display()
+inline void Interface::display()
 {
     std::cout << "-----------LZW Compressor-----------\n";
     std::cout << "For available commands, type 'help'.\n"; 
     std::cout << "All paths should be absolute.\n";
 }
 
-inline void help()
+inline void Interface::help()
 {
     std::cout << "Available commands:\n";
     std::cout << "ZIP <path-to-future-archive> <file1 file2 directory1 ...> - compress a file(s) or/and a directory\n";
@@ -91,6 +91,7 @@ void Interface::run()
         {
             try
             {
+                
             std::cout << "Extracting files...\n";
             std::string archive_name, extract_to, file;
             ss >> archive_name >> extract_to;

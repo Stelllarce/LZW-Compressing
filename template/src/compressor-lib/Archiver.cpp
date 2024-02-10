@@ -254,7 +254,12 @@ void Archiver::info(const std::string& archive_name)
     }
     archive.close();
 }
-
+/**
+ * @brief Refreshes the archive with its new version
+ * 
+ * @param archive_name - absolute path to archive
+ * @param files - absolute paths of files to be included or updated in the archive 
+ */
 void Archiver::refresh(const std::string& archive_name, std::set<std::string>& files)
 {
     // Open the original archive file
@@ -264,7 +269,7 @@ void Archiver::refresh(const std::string& archive_name, std::set<std::string>& f
         throw std::runtime_error("Failed to open archive");
 
     // Create a new archive file
-    std::string temp_archive_name = Path::getPath(archive_name) + "temp_" + Path::getFile(archive_name);
+    std::string temp_archive_name = Path::getPath(archive_name) + "/temp_" + Path::getFile(archive_name);
     std::fstream new_archive(temp_archive_name, std::ios::binary | std::ios::out);
 
     if (!new_archive.is_open())
@@ -344,7 +349,11 @@ void Archiver::refresh(const std::string& archive_name, std::set<std::string>& f
     // Renaming the temporary archive to the original archive
     std::rename(temp_archive_name.c_str(), archive_name.c_str());
 }
-
+/**
+ * @brief Checks for any errors in the archive
+ * 
+ * @param archive_name - absolute path to archive
+ */
 void Archiver::errorCheck(const std::string& archive_name)
 {
     std::ifstream archive(archive_name, std::ios::binary | std::ios::in);
