@@ -444,11 +444,11 @@ TEST_CASE("Archiver unzips specific files")
     testUnzipResults(test_input3, expected3);
 }
 
-// TEST_CASE("Testing archiver refresh/Nothing has changed")
-// {
-//     Archiver archiver;
-//     std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
-//     std::set<std::string> files = {Path::getFile(test_input), Path::getFile(test_input2), Path::getFile(test_input3)};
+TEST_CASE("Testing archiver refresh/Nothing has changed")
+{
+    Archiver archiver;
+    std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
+    std::set<std::string> files = {Path::getFile(test_input), Path::getFile(test_input2), Path::getFile(test_input3)};
 
-//     REQUIRE_NOTHROW(archiver.refresh(archive_name, files));
-// }
+    REQUIRE_NOTHROW(archiver.refresh(archive_name, files));
+}
