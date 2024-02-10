@@ -2,16 +2,11 @@
 #include <iostream>
 #include "../compressor-lib/Interface.h"
 
+// Driver function, operating system can be changed in Path header file
+
 int main(int argc, char const *argv[])
 {
-    try
-    {
-        Interface::run();
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-    }
+    Interface::run();
     
     return 0;
 }
