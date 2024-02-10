@@ -18,8 +18,10 @@ void Decoder::decode(std::ifstream& in, std::ofstream& out, int read_size)
     if (!in.is_open() || !out.is_open())
         throw std::runtime_error("File not open");
 
-    int old_code; // Previous code
+    int old_code, read_sz = 0; // Previous code
     in.read((char*)(&old_code), sizeof(int)); // Read the first code
+    if (read_size > 0)
+        read_sz += sizeof(old_code);
     out << decode_table[old_code].c_str(); // Write the first code's value
 
     // Variables for decoding
@@ -27,18 +29,10 @@ void Decoder::decode(std::ifstream& in, std::ofstream& out, int read_size)
     std::string decoded_next = "";
 
     // New code is the currently read code
-    int new_code, read_sz = 0;
+    int new_code;
 
     while (in.read((char*)(&new_code), sizeof(new_code)))
     {
-        // When reading a file with a specified size
-        if (read_size > 0)
-        {
-            read_sz += sizeof(new_code);
-            if (read_sz >= read_size)
-                break;
-        }
-
         // If the new code is not in the table
         if (decode_table.find(new_code) == decode_table.end())
         {
@@ -60,6 +54,14 @@ void Decoder::decode(std::ifstream& in, std::ofstream& out, int read_size)
             decode_table[decode_table.size()] = decode_table[old_code] + decoded_next;
         // Update the old code
         old_code = new_code;
+
+        // When reading a file with a specified size
+        if (read_size > 0)
+        {
+            read_sz += sizeof(new_code);
+            if (read_sz >= read_size)
+                break;
+        }
     }
 
     // Clear flags after reaching eof

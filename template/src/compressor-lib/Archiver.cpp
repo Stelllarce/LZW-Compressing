@@ -3,20 +3,70 @@
 Archiver::Archiver() : Encoder(), Decoder() {}
 
 /**
+ * @brief Compresses a single file and writes it to the archive
+ * 
+ * @param archive - archive file
+ * @param file - absolute path of file to be compressed
+ * @param relative_path - relative path of file to be comprssed
+ */
+void Archiver::zipSingle(std::fstream& archive, const std::string& file, const std::string& relative_path)
+{
+    // Open the file to be compressed
+    std::ifstream to_compress(file, std::ios::binary);
+
+    // Skip compression if file is empty
+    if (to_compress.peek() == std::ifstream::traits_type::eof())
+    {
+        std::cerr << "File is empty: " << file << ", skipping...\n";
+        return;
+    }
+
+    if (!to_compress.is_open())
+        throw std::runtime_error("Failed to open file to compress");
+
+    // Write the lenght of the path/name of the file that is being written
+    int path_length = relative_path.size();
+    archive.write((char*)(&path_length), sizeof(path_length));
+    // Write the path/name of the file that is being written
+    archive.write(relative_path.c_str(), path_length);
+
+    // Write the size of the compressed content
+    int size_placeholder = 0; // Placeholder to be overwritten later by the actual size
+    std::streampos size_pos = archive.tellp(); // Save position to write the size later
+    archive.write((char*)(&size_placeholder), sizeof(size_placeholder)); // Write the placeholder
+
+    // Calculate the size of the compressed content and compress the file
+    std::streampos start = archive.tellp();
+    encode(to_compress, archive); // Encoding the file
+    std::streampos end = archive.tellp();
+
+    // Write the size of the compressed content
+    int size = end - start; // Size of the compressed file
+    archive.seekp(size_pos); // Move to the position of the placeholder
+    archive.write((char*)(&size), sizeof(size)); // Overwrite the placeholder with the actual size
+
+    // Move to the end of the file to append next file
+    archive.seekp(0, std::ios::end);
+
+    // Close the file that was compressed
+    to_compress.close();
+}
+
+
+/**
  * @brief Compress the files into an archive
  * 
  * @param archive_name - name of the archive
- * @param files - files to be compressed
+ * @param files - absolute paths of files to be compressed
+ * @param relative_paths - relative paths of files to be compressed
 */
-void Archiver::zip(std::string& archive_name, const std::vector<std::string>& files)
+void Archiver::zip(const std::string& archive_name, std::vector<std::string>& files, std::vector<std::string>& relative_paths)
 {
-    //TODO: may need to check if archive already exists
-
     // Create archive file
     std::fstream archive(archive_name, std::ios::binary | std::ios::out);
 
     if (!archive.is_open())
-        throw std::runtime_error("Failed to create file");
+        throw std::runtime_error("Failed to create archive");
     
     // Append new content to the end of the file
     archive.seekp(0, std::ios::end);
@@ -24,42 +74,15 @@ void Archiver::zip(std::string& archive_name, const std::vector<std::string>& fi
     // Write the number of files to be written in the archive
     int num_files = files.size();
     archive.write((char*)(&num_files), sizeof(num_files));
+   
+    // One iterator for the whole paths to open the files and one for the relative paths to write to the archive
+    std::vector<std::string>::iterator file_it = files.begin();
+    std::vector<std::string>::iterator rel_path_it = relative_paths.begin();
 
     // Write the files to the archive
-    for (const std::string& file : files)
+    for (; file_it != files.end(), rel_path_it != relative_paths.end(); ++file_it, ++rel_path_it)
     {
-        // Write the lenght of the path/name of the file that is being written
-        int path_length = file.size();
-        archive.write((char*)(&path_length), sizeof(path_length));
-        // Write the path/name of the file that is being written
-        archive.write(Path::getFile(file).c_str(), path_length);
-
-        // Open the file to be compressed
-        std::ifstream to_compress(file, std::ios::binary);
-
-        if (!to_compress.is_open())
-            throw std::runtime_error("Failed to open file to compress");
-        
-        // Write the size of the compressed content
-        int size_placeholder = 0; // Placeholder to be overwritten later by the actual size
-        std::streampos size_pos = archive.tellp(); // Save position to write the size later
-        archive.write((char*)(&size_placeholder), sizeof(size_placeholder)); // Write the placeholder
-
-        // Calculate the size of the compressed content and compress the file
-        std::streampos start = archive.tellp();
-        encode(to_compress, archive); // Encoding the file
-        std::streampos end = archive.tellp();
-
-        // Write the size of the compressed content
-        int size = end - start; // Size of the compressed file
-        archive.seekp(size_pos); // Move to the position of the placeholder
-        archive.write((char*)(&size), sizeof(size)); // Overwrite the placeholder with the actual size
-
-        // Move to the end of the file to append next file
-        archive.seekp(0, std::ios::end);
-        
-        // Close the file that was compressed
-        to_compress.close();
+        zipSingle(archive, *file_it, *rel_path_it);
     }
     // All files have been compressed and written to the archive, close the archive
     archive.close();
@@ -68,90 +91,81 @@ void Archiver::zip(std::string& archive_name, const std::vector<std::string>& fi
 /** 
  * @brief Restore all files from the archive
  * 
- * @param num_files - number of files in the archive
  * @param archive - archive file
  * @param extract_to - directory to extract the files to
 */
-void Archiver::unzipAll(const int num_files, std::ifstream& archive, const std::string& extract_to)
+void Archiver::unzipSingle(std::ifstream& archive, const std::string& extract_to)
 {
-    for (int i = 0; i < num_files; ++i)
-    {
-        // Read the length of the path/name of the file
-        int path_length;
-        archive.read((char*)(&path_length), sizeof(path_length));
+    // Read the length of the path/name of the file
+    int path_length = 0;
+    archive.read((char*)(&path_length), sizeof(path_length));
 
-        // Temp buffer to store the path/name of the file
-        char* file_path = new char[path_length + 1];
-        archive.read(file_path, path_length);
-        file_path[path_length] = '\0';
+    // Temp buffer to store the path/name of the file
+    char* file_path = new char[path_length + 1];
+    archive.read(file_path, path_length);
+    file_path[path_length] = '\0';
 
-        // Read the size of the compressed content
-        int file_size;
-        archive.read((char*)(&file_size), sizeof(file_size));
+    // Read the size of the compressed content
+    int file_size;
+    archive.read((char*)(&file_size), sizeof(file_size));
 
-        std::string full_extr_path = Path::createDirectory(extract_to, Path::getPath(file_path)); // Create the directory structure
-        full_extr_path += Path::getFile(file_path); // Append the file name to the directory structure
-        
-        // File to be restored
-        std::ofstream to_decompress(full_extr_path, std::ios::binary);
+    std::string full_extr_path = Path::createDirectory(extract_to, Path::getPath(file_path)); // Create the directory structure
+    full_extr_path += file_path; // Append the file name to the directory structure
+    
+    // File to be restored
+    std::ofstream to_decompress(full_extr_path, std::ios::binary);
 
-        if (!to_decompress.is_open())
-            throw std::runtime_error("Failed to create file to extract");
+    if (!to_decompress.is_open())
+        throw std::runtime_error("Failed to create file to extract");
 
-        // Decode the file
-        decode(archive, to_decompress, file_size);
-        to_decompress.close(); // Close the file
-        delete[] file_path; // Free temp buffer
-    }
+    // Decode the file
+    decode(archive, to_decompress, file_size);
+    to_decompress.close(); // Close the file
+    delete[] file_path; // Free temp buffer
 }
 /**
  * @brief Restores selected files from the archive
  * 
  * @param archive - archive file
  * @param extract_to - directory to extract the files to
- * @param files_to_extract - name of files to be extracted
+ * @param files_to_extract - absolute paths of files to be extracted
 */
 void Archiver::unzipSelected(std::ifstream& archive, const std::string& extract_to, const std::set<std::string>& files_to_extract)
 {
-    for (int i = 0; i < files_to_extract.size(); ++i)
+    // Read the length of the path/name of the file
+    int path_length = 0;
+    archive.read((char*)(&path_length), sizeof(path_length));
+
+    // Temp buffer to store the path/name of the file
+    char* file_path = new char[path_length + 1];
+    archive.read(file_path, path_length);
+    file_path[path_length] = '\0';
+
+    // Read the size of the compressed content
+    int file_size;
+    archive.read((char*)(&file_size), sizeof(file_size));
+
+    // If name of file inside the archive is not among the listed names, skip
+    if (files_to_extract.find(file_path) == files_to_extract.end())
     {
-        // Read the length of the path/name of the file
-        int path_length;
-        archive.read((char*)(&path_length), sizeof(path_length));
-
-        // Temp buffer to store the path/name of the file
-        char* file_path = new char[path_length + 1];
-        archive.read(file_path, path_length);
-        file_path[path_length] = '\0';
-
-        // Read the size of the compressed content
-        int file_size;
-        archive.read((char*)(&file_size), sizeof(file_size));
-
-        // MAYBE PUT INSIDE A FUNCTION
-        // If name of file inside the archive is not among the listed names, skip
-        if (files_to_extract.find(file_path) == files_to_extract.end())
-        {
-            archive.seekg(file_size, std::ios::cur);
-            archive.seekg(sizeof(int), std::ios::cur);
-            delete[] file_path;
-            continue;
-        }
-
-        std::string full_extr_path = Path::createDirectory(extract_to, Path::getPath(file_path)); // Create the directory structure
-        full_extr_path += Path::getFile(file_path); // Append the file name to the directory structure
-
-        // File to be restored
-        std::ofstream to_decompress(file_path, std::ios::binary);
-
-        if (!to_decompress.is_open())
-            throw std::runtime_error("Failed to create file to extract");
-
-        // Decode the file
-        decode(archive, to_decompress, file_size); // Decode the file
-        to_decompress.close(); // Close the file
-        delete[] file_path; // Free temp buffer
+        archive.seekg(file_size, std::ios::cur);
+        delete[] file_path;
+        return;
     }
+
+    std::string full_extr_path = Path::createDirectory(extract_to, Path::getPath(file_path)); // Create the directory structure
+    full_extr_path += file_path; // Append the file name to the directory structure
+
+    // File to be restored
+    std::ofstream to_decompress(full_extr_path, std::ios::binary);
+
+    if (!to_decompress.is_open())
+        throw std::runtime_error("Failed to create file to extract");
+
+    // Decode the file
+    decode(archive, to_decompress, file_size); // Decode the file
+    to_decompress.close(); // Close the file
+    delete[] file_path; // Free temp buffer
 }
 
 /**
@@ -159,7 +173,7 @@ void Archiver::unzipSelected(std::ifstream& archive, const std::string& extract_
  * 
  * @param archive_name - name of the archive
  * @param extract_to - directory to extract the files to
- * @param files_to_extract - name of files to be extracted
+ * @param files_to_extract - absolte paths of files to be extracted
 */
 void Archiver::unzip(const std::string& archive_name, const std::string& extract_to, const std::set<std::string>& files_to_extract)
 {
@@ -176,8 +190,11 @@ void Archiver::unzip(const std::string& archive_name, const std::string& extract
     // Unzip the files
     if (files_to_extract.empty()) // If no files are specified, then user must've input '#'
     {
-        // Restore all files from the archive
-        unzipAll(num_files, archive, extract_to);
+        for (int i = 0; i < num_files; ++i)
+        {
+            // Restore all files from the archive
+            unzipSingle(archive, extract_to);
+        }
     }
     else
     {
@@ -185,8 +202,12 @@ void Archiver::unzip(const std::string& archive_name, const std::string& extract
         if (files_to_extract.size() > num_files) 
             throw std::runtime_error("Too many files to extract");
 
-        // Restore selected files from the archive
-        unzipSelected(archive, extract_to, files_to_extract);
+        for (int i = 0; i < num_files; ++i)
+        {
+            // Restore selected files from the archive
+            unzipSelected(archive, extract_to, files_to_extract);
+        }
+        
     }
     // Close the archive
     archive.close();
@@ -197,7 +218,7 @@ void Archiver::unzip(const std::string& archive_name, const std::string& extract
  * 
  * @param archive_name - name of the archive
 */
-void Archiver::info(const std::string& archive_name)
+void Archiver::info(const std::string& archive_name) 
 {
     // Open the archive file
     std::ifstream archive(archive_name, std::ios::binary | std::ios::in);
@@ -232,4 +253,138 @@ void Archiver::info(const std::string& archive_name)
         delete[] file_path;
     }
     archive.close();
+}
+
+void Archiver::refresh(const std::string& archive_name, std::set<std::string>& files)
+{
+    // Open the original archive file
+    std::ifstream archive(archive_name, std::ios::binary | std::ios::in);
+
+    if (!archive.is_open())
+        throw std::runtime_error("Failed to open archive");
+
+    // Create a new archive file
+    std::string temp_archive_name = Path::getPath(archive_name) + "temp_" + Path::getFile(archive_name);
+    std::fstream new_archive(temp_archive_name, std::ios::binary | std::ios::out);
+
+    if (!new_archive.is_open())
+        throw std::runtime_error("Failed to create temporary archive");
+
+    // Read the number of files in the old archive
+    int old_num_files;
+    archive.read((char*)(&old_num_files), sizeof(old_num_files));
+
+    // Write the old number of files temporarily to the temp archive
+    new_archive.write((char*)(&old_num_files), sizeof(old_num_files));
+
+    // Iterate through the files in the original archive
+    for (int i = 0; i < old_num_files; ++i)
+    {
+        int path_length;
+        archive.read((char*)(&path_length), sizeof(path_length));
+
+        char* file_path = new char[path_length + 1];
+        archive.read(file_path, path_length);
+        file_path[path_length] = '\0';
+
+        // Check if the file is in the list of updated files
+        bool updated_file = false;
+        if (files.find(file_path) != files.end())
+        {
+            files.erase(files.find(file_path));
+            updated_file = true;
+        }
+
+        int file_size;
+        archive.read((char*)(&file_size), sizeof(file_size));
+
+        // If the file is in the list of updated files, write the updated version to the new archive
+        if (updated_file)
+        {
+            zipSingle(new_archive, file_path, file_path);
+            archive.seekg(file_size, std::ios::cur);
+        }
+        else // Copy the file from the original archive to the new archive 
+        {
+            new_archive.write((char*)(&path_length), sizeof(path_length));
+            new_archive.write(file_path, path_length);
+
+            new_archive.write((char*)(&file_size), sizeof(file_size));
+            char* buffer = new char[file_size];
+            archive.read(buffer, file_size);
+            new_archive.write(buffer, file_size);
+            delete[] buffer;
+        }
+
+        delete[] file_path;
+    }
+
+    // If there are any files not present in the original archive, write them to the new archive
+    if (!files.empty())
+    {
+        for (const std::string& file : files)
+        {
+            zipSingle(new_archive, file, Path::getFile(file));
+        }
+        int additional_size = files.size();
+        int new_num_files = old_num_files + additional_size;
+        new_archive.seekp(0, std::ios::beg);
+        new_archive.write((char*)(&new_num_files), sizeof(new_num_files));
+    }
+
+    // Closing the original archive
+    archive.close();
+
+    // Closing the new archive
+    new_archive.close();
+
+    // Deleting the original archive
+    std::remove(archive_name.c_str());
+
+    // Renaming the temporary archive to the original archive
+    std::rename(temp_archive_name.c_str(), archive_name.c_str());
+}
+
+void Archiver::errorCheck(const std::string& archive_name)
+{
+    std::ifstream archive(archive_name, std::ios::binary | std::ios::in);
+
+    if (!archive.is_open())
+        throw std::runtime_error("Archive not found");
+
+    int num_files;
+    archive.read((char*)(&num_files), sizeof(num_files));
+
+    for (int i = 0; i < num_files; ++i)
+    {
+        int path_length;
+        archive.read((char*)(&path_length), sizeof(path_length));
+
+        char* file_path = new char[path_length + 1];
+        archive.read(file_path, path_length);
+        file_path[path_length] = '\0';
+
+        if (strlen(file_path) != path_length)
+            std::cerr << "Error found in archive: " << archive_name << " at position: " << archive.tellg() << "\n";
+        
+
+        int file_size;
+        archive.read((char*)(&file_size), sizeof(file_size));
+
+        char* buffer = new char[file_size];
+        archive.read(buffer, file_size);
+
+        if (strlen(buffer) != file_size)
+            std::cerr << "Error found in archive: " << archive_name << " at position: " << archive.tellg() << "\n";
+        
+
+        delete[] file_path;
+        delete[] buffer;
+    }
+
+    if (archive.peek() != EOF)
+        std::cerr << "Error found in archive: " << archive_name << " at position: " << archive.tellg() << "\n";
+
+    archive.close();
+    
 }

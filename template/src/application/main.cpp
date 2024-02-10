@@ -4,10 +4,9 @@
 
 int main(int argc, char const *argv[])
 {
-    Interface interface;
     try
     {
-        interface.run();
+        Interface::run();
     }
     catch (const std::exception& e)
     {

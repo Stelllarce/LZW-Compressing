@@ -124,8 +124,7 @@ if(BUILD_TESTING)
   add_subdirectory("test")
 endif()
 
-# Run the bash script to delete tempsautomatically on each build
-# This is useful for testing 
+# Runs the bash script to delete temps automatically on each build
 # The script is located in the test/test_files/test_output directory
 # It may not work on Windows, so it can be commented out
 add_custom_command(

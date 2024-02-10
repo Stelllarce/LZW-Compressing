@@ -21,15 +21,15 @@ bool Path::isFilePath(const std::string& path)
  */
 void Path::getAllFiles(const std::string& path, std::vector<std::string>& files)
 {
-    for (const auto & entry : std::filesystem::directory_iterator(path))
+    for (const auto & file : std::filesystem::directory_iterator(path))
     {
-        if (isFilePath(entry.path().string()))
+        if (isFilePath(file.path().string()))
         {
-            files.push_back(entry.path().string());
+            files.push_back(file.path().string());
         }
         else
         {
-            getAllFiles(entry.path().string(), files);
+            getAllFiles(file.path().string(), files);
         }
     }    
 }
@@ -39,6 +39,8 @@ void Path::getAllFiles(const std::string& path, std::vector<std::string>& files)
  * 
  * @param path - full path and file name
  * @param os - operating system
+ * 
+ * @return path part of the absolute path
 */
 std::string Path::getPath(const std::string& path)
 {
@@ -57,6 +59,8 @@ std::string Path::getPath(const std::string& path)
  * 
  * @param path - full path and file name
  * @param os - operating system
+ * 
+ * @return file part of the absolute path
 */
 std::string Path::getFile(const std::string& path)
 {
@@ -76,6 +80,8 @@ std::string Path::getFile(const std::string& path)
  * @param base - base path
  * @param path - path to get relative to base
  * @param os - operating system
+ * 
+ * @return relative path of the second file in terms of the given base
 */
 std::string Path::getRelativePath(const std::string& base, const std::string& path)
 {
@@ -142,10 +148,23 @@ std::string Path::getRelativePath(const std::string& base, const std::string& pa
  * @param dest - destination directory
  * @param dirs_to_create - directories to be created
  * @param os - operating system
+ * 
+ * @return path of the created directory
 */
 std::string Path::createDirectory(const std::string& dest, const std::string& dirs_to_create)
 {
     std::string path = dest + (os == OS::UNIX ? "/" : "\\") + dirs_to_create;
     std::filesystem::create_directories(path);
     return path;
+}
+
+void Path::getAllFilesSingleDirectory(const std::string& path, std::vector<std::string>& files)
+{
+    for (const auto & file : std::filesystem::directory_iterator(path))
+    {
+        if (isFilePath(file.path().string()))
+        {
+            files.push_back(file.path().string());
+        }
+    }    
 }

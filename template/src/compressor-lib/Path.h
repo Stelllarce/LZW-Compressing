@@ -25,7 +25,6 @@ public:
     // Checks if the path is path to a file
     static bool isFilePath(const std::string&);
 
-
     // Fills vector with all files in a directory and its subdirectories
     static void getAllFiles(const std::string&, std::vector<std::string>&);
 
@@ -41,6 +40,8 @@ public:
     // Creates a directory at a specified location
     static std::string createDirectory(const std::string&, const std::string&);
 
+    // Fills vector with all files from a single directory
+    static void getAllFilesSingleDirectory(const std::string&, std::vector<std::string>&);
 private:
     static OS os;
 };
