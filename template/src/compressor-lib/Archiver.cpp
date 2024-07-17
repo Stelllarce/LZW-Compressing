@@ -238,8 +238,17 @@ void Archiver::info(const std::string& archive_name)
     {
         int path_length;
         archive.read((char*)(&path_length), sizeof(path_length));
-
-        char* file_path = new char[path_length + 1];
+        char* file_path;
+        try
+        {
+            file_path = new char[path_length + 1];;
+        }
+        catch (const std::bad_alloc& e)
+        {
+            delete[] file_path;
+            std::cerr << "Cannot read file name in file " << Path::getFile(archive_name) << '\n';
+            return;
+        }
         archive.read(file_path, path_length);
         file_path[path_length] = '\0';
 
