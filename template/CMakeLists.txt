@@ -115,6 +115,9 @@ include_directories("src")
 # Library for expression processing
 add_subdirectory("src/compressor-lib")
 
+# Library for MD5 hashing
+add_subdirectory("src/md5-lib")
+
 # Application
 add_subdirectory("src/application")
 
