@@ -170,7 +170,7 @@ inline void testEncodeResults(const char* result_path, std::vector<int>& expecte
 
 inline void testEncode(Encoder& enc, const char* refrence_file_path, const char* compressed_file_path, std::vector<int>& expected) 
 {
-    std::fstream in;
+    std::ifstream in;
     in.open(refrence_file_path, std::ios::binary | std::ios::in);
     std::fstream out;
     out.open(compressed_file_path, std::ios::binary | std::ios::out | std::ios::trunc);
@@ -252,6 +252,94 @@ TEST_CASE("Decoding works correctly with different files")
 
 // ------------Archiver test cases----------------
 
+TEST_CASE("Single file") 
+{
+    Archiver archiver;
+    std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
+    std::vector<std::string> files = {test_input};
+    std::vector<std::string> relatpths = {Path::getFile(test_input)};
+
+    REQUIRE_NOTHROW(archiver.zip(archive_name, files, relatpths));
+
+    std::ifstream archive;
+    archive.open(archive_name, std::ios::binary | std::ios::in);
+
+    REQUIRE(archive.is_open());
+
+    SECTION("Saved number of files is correct")
+    {
+        int number_of_files, expected_num_files = files.size();
+        archive.read((char*)(&number_of_files), sizeof(number_of_files));
+        CHECK(number_of_files == expected_num_files);
+    }
+
+    SECTION("Saved file path is correct")
+    {
+        int path_length;
+        archive.seekg(sizeof(int), std::ios::cur); // skip number of files
+        archive.read((char*)(&path_length), sizeof(path_length));
+
+        CHECK(path_length == relatpths[0].size());
+        
+        char* path = new char[path_length + 1];
+        archive.read(path, path_length);
+        path[path_length] = '\0';       
+        archive.seekg(sizeof(int) * 2 + relatpths[0].size(), std::ios::cur);
+
+        std::string path_str(path);
+        delete[] path;
+
+        CHECK(path_str == relatpths[0]);
+    }
+
+    SECTION("Saved file content is correct")
+    {
+        int read_bytes = 0;
+        std::vector<int> input, expected = {66, 65, 256, 257, 65, 260};
+        int current, file_size;
+        archive.seekg(sizeof(int) * 2, std::ios::cur); // skip number of files and file name lenght
+        archive.seekg(relatpths[0].size(), std::ios::cur); // skip file name
+
+        archive.read((char*)(&file_size), sizeof(file_size));
+
+        CHECK(file_size == expected.size() * sizeof(int));
+
+        while (archive.read((char*)(&current), sizeof(current)))
+        {
+            if (read_bytes >= file_size)
+                break;
+            input.push_back(current);
+            read_bytes += sizeof(current);
+        }
+        
+        CHECK(input == expected);
+    }
+
+    SECTION("MD5 hash is correct")
+    {
+        std::string md5_hash;
+        archive.seekg(-32, std::ios::end);
+        int archive_size = archive.tellg();
+        archive.seekg(0, std::ios::beg);
+
+        char* archive_data = new char[archive_size];
+        archive.read(archive_data, archive_size);
+
+        md5_hash = md5(archive_data);
+        delete[] archive_data;
+
+        // Read the written hash at the end of the file
+        std::string md5_hash_read;
+
+        archive.seekg(-32, std::ios::end);
+        char* hash = new char[32];
+        archive.read(hash, 32);
+        md5_hash_read = std::string(hash);
+
+        CHECK(md5_hash == md5_hash_read);
+    }
+}
+
 TEST_CASE("Archiver zips particular files")
 {
     Archiver archiver;
@@ -313,31 +401,6 @@ TEST_CASE("Archiver zips particular files")
         }
         
         CHECK(input == expected);
-    }
-
-    // ** WIP **
-    SECTION("MD5 hash is correct")
-    {
-        std::string md5_hash;
-        archive.seekg(0, std::ios::end);
-        int archive_size = archive.tellg();
-        archive.seekg(0, std::ios::beg);
-
-        char* archive_data = new char[archive_size];
-        archive.read(archive_data, archive_size);
-
-        md5_hash = md5(archive_data);
-        delete[] archive_data;
-
-        // Read the written hash at the end of the file
-        std::string md5_hash_read;
-
-        archive.seekg(-32, std::ios::end);
-        char* hash = new char[32];
-        archive.read(hash, 32);
-        md5_hash_read = std::string(hash);
-
-        CHECK(md5_hash == md5_hash_read);
     }
 }
 

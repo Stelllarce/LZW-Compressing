@@ -12,10 +12,10 @@ Archiver::Archiver() : Encoder(), Decoder() {}
 void Archiver::zipSingle(std::fstream& archive, const std::string& file, const std::string& relative_path)
 {
     // Open the file to be compressed
-    std::fstream to_compress(file, std::ios::binary);
+    std::ifstream to_compress(file, std::ios::binary);
 
     // Skip compression if file is empty
-    if (to_compress.peek() == std::fstream::traits_type::eof())
+    if (to_compress.peek() == std::ifstream::traits_type::eof())
     {
         std::cerr << "File is empty: " << file << ", skipping...\n";
         return;

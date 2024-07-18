@@ -7,7 +7,7 @@ Encoder::Encoder()
 }
 
 // Encoding to a .lzw file
-std::string Encoder::encode(std::fstream& in, std::fstream& out)
+std::string Encoder::encode(std::ifstream& in, std::fstream& out)
 {
     if (!in.is_open() || !out.is_open())
         throw std::runtime_error("File not open");
