@@ -5,6 +5,7 @@ target_link_libraries(
 	main
 	PRIVATE
 		compressor-lib
+		md5-lib
 )
 
 target_sources(

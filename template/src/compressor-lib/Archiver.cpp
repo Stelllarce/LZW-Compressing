@@ -12,10 +12,10 @@ Archiver::Archiver() : Encoder(), Decoder() {}
 void Archiver::zipSingle(std::fstream& archive, const std::string& file, const std::string& relative_path)
 {
     // Open the file to be compressed
-    std::ifstream to_compress(file, std::ios::binary);
+    std::fstream to_compress(file, std::ios::binary);
 
     // Skip compression if file is empty
-    if (to_compress.peek() == std::ifstream::traits_type::eof())
+    if (to_compress.peek() == std::fstream::traits_type::eof())
     {
         std::cerr << "File is empty: " << file << ", skipping...\n";
         return;
@@ -24,26 +24,32 @@ void Archiver::zipSingle(std::fstream& archive, const std::string& file, const s
     if (!to_compress.is_open())
         throw std::runtime_error("Failed to open file to compress");
 
+    std::string file_contents; 
+
     // Write the lenght of the path/name of the file that is being written
     int path_length = relative_path.size();
-    archive.write((char*)(&path_length), sizeof(path_length));
+    archive.write((const char*)(&path_length), sizeof(path_length));
     // Write the path/name of the file that is being written
     archive.write(relative_path.c_str(), path_length);
 
     // Write the size of the compressed content
     int size_placeholder = 0; // Placeholder to be overwritten later by the actual size
     std::streampos size_pos = archive.tellp(); // Save position to write the size later
-    archive.write((char*)(&size_placeholder), sizeof(size_placeholder)); // Write the placeholder
+    archive.write((const char*)(&size_placeholder), sizeof(size_placeholder)); // Write the placeholder
 
     // Calculate the size of the compressed content and compress the file
     std::streampos start = archive.tellp();
-    encode(to_compress, archive); // Encoding the file
+    std::string encoded_file = encode(to_compress, archive); // Encoding the file
     std::streampos end = archive.tellp();
 
     // Write the size of the compressed content
     int size = end - start; // Size of the compressed file
+    
+    file_contents = std::to_string(path_length) + relative_path + std::to_string(size) + encoded_file; 
+    archive.write((const char*)(md5(file_contents).c_str()), 32); // Write the MD5 hash of the compressed content
+    
     archive.seekp(size_pos); // Move to the position of the placeholder
-    archive.write((char*)(&size), sizeof(size)); // Overwrite the placeholder with the actual size
+    archive.write((const char*)(&size), sizeof(size)); // Overwrite the placeholder with the actual size
 
     // Move to the end of the file to append next file
     archive.seekp(0, std::ios::end);

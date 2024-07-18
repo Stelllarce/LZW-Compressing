@@ -7,6 +7,7 @@
 #include <vector>
 #include <set>
 #include <filesystem>
+#include "../md5-lib/md5.h"
 
 class Archiver: public Encoder, public Decoder 
 {

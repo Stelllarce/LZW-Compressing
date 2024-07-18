@@ -1,6 +1,12 @@
 # Target for the expression processing library
 add_library(compressor-lib STATIC)
 
+target_link_libraries(
+	compressor-lib
+	PRIVATE
+		md5-lib
+)
+
 target_sources(
 	compressor-lib
 	PRIVATE

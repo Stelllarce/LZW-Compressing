@@ -170,7 +170,7 @@ inline void testEncodeResults(const char* result_path, std::vector<int>& expecte
 
 inline void testEncode(Encoder& enc, const char* refrence_file_path, const char* compressed_file_path, std::vector<int>& expected) 
 {
-    std::ifstream in;
+    std::fstream in;
     in.open(refrence_file_path, std::ios::binary | std::ios::in);
     std::fstream out;
     out.open(compressed_file_path, std::ios::binary | std::ios::out | std::ios::trunc);
@@ -313,6 +313,31 @@ TEST_CASE("Archiver zips particular files")
         }
         
         CHECK(input == expected);
+    }
+
+    // ** WIP **
+    SECTION("MD5 hash is correct")
+    {
+        std::string md5_hash;
+        archive.seekg(0, std::ios::end);
+        int archive_size = archive.tellg();
+        archive.seekg(0, std::ios::beg);
+
+        char* archive_data = new char[archive_size];
+        archive.read(archive_data, archive_size);
+
+        md5_hash = md5(archive_data);
+        delete[] archive_data;
+
+        // Read the written hash at the end of the file
+        std::string md5_hash_read;
+
+        archive.seekg(-32, std::ios::end);
+        char* hash = new char[32];
+        archive.read(hash, 32);
+        md5_hash_read = std::string(hash);
+
+        CHECK(md5_hash == md5_hash_read);
     }
 }
 
