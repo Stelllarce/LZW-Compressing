@@ -9,7 +9,7 @@ Archiver::Archiver() : Encoder(), Decoder() {}
  * @param file - absolute path of file to be compressed
  * @param relative_path - relative path of file to be comprssed
  */
-void Archiver::zipSingle(std::fstream& archive, const std::string& file, const std::string& relative_path)
+void Archiver::zipSingle(std::ofstream& archive, const std::string& file, const std::string& relative_path)
 {
     // Open the file to be compressed
     std::ifstream to_compress(file, std::ios::binary);
@@ -23,8 +23,6 @@ void Archiver::zipSingle(std::fstream& archive, const std::string& file, const s
 
     if (!to_compress.is_open())
         throw std::runtime_error("Failed to open file to compress");
-
-    std::string file_contents; 
 
     // Write the lenght of the path/name of the file that is being written
     int path_length = relative_path.size();
@@ -44,10 +42,6 @@ void Archiver::zipSingle(std::fstream& archive, const std::string& file, const s
 
     // Write the size of the compressed content
     int size = end - start; // Size of the compressed file
-    
-    file_contents = std::to_string(path_length) + relative_path + std::to_string(size) + encoded_file; 
-    archive.write((const char*)(md5(file_contents).c_str()), 32); // Write the MD5 hash of the compressed content
-    
     archive.seekp(size_pos); // Move to the position of the placeholder
     archive.write((const char*)(&size), sizeof(size)); // Overwrite the placeholder with the actual size
 
@@ -69,17 +63,18 @@ void Archiver::zipSingle(std::fstream& archive, const std::string& file, const s
 void Archiver::zip(const std::string& archive_name, std::vector<std::string>& files, std::vector<std::string>& relative_paths)
 {
     // Create archive file
-    std::fstream archive(archive_name, std::ios::binary | std::ios::out);
+    std::ofstream archive_out(archive_name, std::ios::binary);
+    std::ifstream archive_in(archive_name, std::ios::binary);
 
-    if (!archive.is_open())
+    if (!archive_out.is_open())
         throw std::runtime_error("Failed to create archive");
     
     // Append new content to the end of the file
-    archive.seekp(0, std::ios::end);
+    archive_out.seekp(0, std::ios::end);
 
     // Write the number of files to be written in the archive
     int num_files = files.size();
-    archive.write((char*)(&num_files), sizeof(num_files));
+    archive_out.write((char*)(&num_files), sizeof(num_files));
    
     // One iterator for the whole paths to open the files and one for the relative paths to write to the archive
     std::vector<std::string>::iterator file_it = files.begin();
@@ -88,10 +83,24 @@ void Archiver::zip(const std::string& archive_name, std::vector<std::string>& fi
     // Write the files to the archive
     for (; file_it != files.end(), rel_path_it != relative_paths.end(); ++file_it, ++rel_path_it)
     {
-        zipSingle(archive, *file_it, *rel_path_it);
+        zipSingle(archive_out, *file_it, *rel_path_it);
     }
+
+    // Section to write the hash of the archive
+    archive_out.seekp(0, std::ios::end); // Move put pointer to the end to calculate archive size
+    int archive_size = archive_out.tellp(); // Archive size
+    archive_in.seekg(0, std::ios::beg); // Move get pointer at the start to read from file
+    char* archive_data = new char[archive_size + 1]; // Buffer to store the archive data
+    archive_in.read(archive_data, archive_size);
+    archive_data[archive_size] = '\0';
+    std::string archive_hash = md5(archive_data); // Calculate the hash of the archive
+    // Here the put pointer should be already at the end of the file
+    archive_out.write(archive_hash.c_str(), archive_hash.size()); // Write the hash at the end of the file
+
+    delete[] archive_data; // Free the memory
     // All files have been compressed and written to the archive, close the archive
-    archive.close();
+    archive_in.close();
+    archive_out.close();
 }
 
 /** 
@@ -285,7 +294,7 @@ void Archiver::refresh(const std::string& archive_name, std::set<std::string>& f
 
     // Create a new archive file
     std::string temp_archive_name = Path::getPath(archive_name) + "/temp_" + Path::getFile(archive_name);
-    std::fstream new_archive(temp_archive_name, std::ios::binary | std::ios::out);
+    std::ofstream new_archive(temp_archive_name, std::ios::binary);
 
     if (!new_archive.is_open())
         throw std::runtime_error("Failed to create temporary archive");

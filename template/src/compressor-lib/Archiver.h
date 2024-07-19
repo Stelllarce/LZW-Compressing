@@ -7,6 +7,7 @@
 #include <vector>
 #include <set>
 #include <filesystem>
+#include <cassert>
 #include "../md5-lib/md5.h"
 
 class Archiver: public Encoder, public Decoder 
@@ -31,7 +32,7 @@ public:
 private:
 
     // Zips a file
-    void zipSingle(std::fstream& archive, const std::string& file, const std::string& relative_path);
+    void zipSingle(std::ofstream& archive, const std::string& file, const std::string& relative_path);
     
     // Unzips a file
     void unzipSingle(std::ifstream&, const std::string&);
