@@ -18,7 +18,7 @@ public:
     Encoder();
 
     // Encoding algorithm
-    std::string encode(std::ifstream&, std::fstream&);
+    std::string encode(std::ifstream&, std::ofstream&);
 
     // Print function for testing
     #ifdef TESTING
