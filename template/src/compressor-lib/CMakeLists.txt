@@ -20,4 +20,6 @@ target_sources(
 		"Interface.cpp"
 		"Path.h"
 		"Path.cpp"
+		"Hasher.h"
+		"Hasher.cpp"
 )
