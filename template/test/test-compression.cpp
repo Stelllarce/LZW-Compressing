@@ -566,3 +566,22 @@ TEST_CASE("Testing archiver refresh/Nothing has changed")
 
     REQUIRE_NOTHROW(archiver.refresh(archive_name, files));
 }
+
+TEST_CASE("Testing archiver errorCheck/No errors")
+{
+    Archiver archiver;
+    std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
+    REQUIRE_NOTHROW(archiver.errorCheck(archive_name));
+}
+
+TEST_CASE("Testing archiver errorCheck/Errors")
+{
+    Archiver archiver;
+    std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
+    std::ofstream archive;
+    archive.open(archive_name, std::ios::binary | std::ios::out | std::ios::app);
+    REQUIRE(archive.is_open());
+    archive << "Error";
+    archive.close();
+    REQUIRE_FALSE(archiver.errorCheck(archive_name));
+}
