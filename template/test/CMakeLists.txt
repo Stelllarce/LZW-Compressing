@@ -5,6 +5,7 @@ target_link_libraries(
 	unit-tests
 	PRIVATE
 		compressor-lib
+		md5-lib
 		Catch2::Catch2WithMain
 )
 

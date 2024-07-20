@@ -3,12 +3,15 @@
 
 #include "Encoder.h"
 #include "Decoder.h"
+#include "Hasher.h"
 #include "Path.h"
 #include <vector>
 #include <set>
 #include <filesystem>
+#include <cassert>
+#include "../md5-lib/md5.h"
 
-class Archiver: public Encoder, public Decoder 
+class Archiver: public Encoder, public Decoder, public Hasher 
 {
 public:
     Archiver();
@@ -26,11 +29,11 @@ public:
     void refresh(const std::string&, std::set<std::string>&);
 
     // Checks for damaged file in an archive
-    void errorCheck(const std::string&);
+    bool errorCheck(const std::string&);
 private:
 
     // Zips a file
-    void zipSingle(std::fstream& archive, const std::string& file, const std::string& relative_path);
+    void zipSingle(std::ofstream& archive, const std::string& file, const std::string& relative_path);
     
     // Unzips a file
     void unzipSingle(std::ifstream&, const std::string&);

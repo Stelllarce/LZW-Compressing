@@ -7,11 +7,12 @@ Encoder::Encoder()
 }
 
 // Encoding to a .lzw file
-void Encoder::encode(std::ifstream& in, std::fstream& out)
+std::string Encoder::encode(std::ifstream& in, std::ofstream& out)
 {
     if (!in.is_open() || !out.is_open())
         throw std::runtime_error("File not open");
 
+    std::string output = ""; // Output string
     std::string repeating = ""; // Repeating string
     char read; // Currently read character
     while (in.get(read))
@@ -22,7 +23,11 @@ void Encoder::encode(std::ifstream& in, std::fstream& out)
         if (encode_table.find(concat) == encode_table.end())
         {
             // Output code
-            out.write((char*)(&encode_table[repeating]), sizeof(int));
+            out.write((const char*)(&encode_table[repeating]), sizeof(int));
+            
+            // Write last character to output string
+            output += encode_table[repeating];
+
             // Write code to the table
             if (encode_table.size() < TABLE_SIZE)
                 encode_table[concat] = encode_table.size();
@@ -37,8 +42,10 @@ void Encoder::encode(std::ifstream& in, std::fstream& out)
     }
 
     // Write the last repeating string
-    if (!repeating.empty())
-        out.write((char*)(&encode_table[repeating]), sizeof(int));
+    if (!repeating.empty()) {
+        out.write((const char*)(&encode_table[repeating]), sizeof(int));
+        output += encode_table[repeating];
+    }
     
     // Clear flags at the end of file
     if(in.eof())
@@ -47,12 +54,14 @@ void Encoder::encode(std::ifstream& in, std::fstream& out)
         in.close(), out.close(),
         throw std::runtime_error("Error reading file");
 
-    if(out.bad() || in.bad())
+    if (out.bad() || in.bad())
         in.close(), out.close(),
         throw std::runtime_error("File error");
 
     // Refresh the table to reuse same object
     refreshTable();
+
+    return output;
 }
 
 // Print function for testing purposes

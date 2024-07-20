@@ -9,7 +9,7 @@ Archiver::Archiver() : Encoder(), Decoder() {}
  * @param file - absolute path of file to be compressed
  * @param relative_path - relative path of file to be comprssed
  */
-void Archiver::zipSingle(std::fstream& archive, const std::string& file, const std::string& relative_path)
+void Archiver::zipSingle(std::ofstream& archive, const std::string& file, const std::string& relative_path)
 {
     // Open the file to be compressed
     std::ifstream to_compress(file, std::ios::binary);
@@ -26,24 +26,24 @@ void Archiver::zipSingle(std::fstream& archive, const std::string& file, const s
 
     // Write the lenght of the path/name of the file that is being written
     int path_length = relative_path.size();
-    archive.write((char*)(&path_length), sizeof(path_length));
+    archive.write((const char*)(&path_length), sizeof(path_length));
     // Write the path/name of the file that is being written
     archive.write(relative_path.c_str(), path_length);
 
     // Write the size of the compressed content
     int size_placeholder = 0; // Placeholder to be overwritten later by the actual size
     std::streampos size_pos = archive.tellp(); // Save position to write the size later
-    archive.write((char*)(&size_placeholder), sizeof(size_placeholder)); // Write the placeholder
+    archive.write((const char*)(&size_placeholder), sizeof(size_placeholder)); // Write the placeholder
 
     // Calculate the size of the compressed content and compress the file
     std::streampos start = archive.tellp();
-    encode(to_compress, archive); // Encoding the file
+    std::string encoded_file = encode(to_compress, archive); // Encoding the file
     std::streampos end = archive.tellp();
 
     // Write the size of the compressed content
     int size = end - start; // Size of the compressed file
     archive.seekp(size_pos); // Move to the position of the placeholder
-    archive.write((char*)(&size), sizeof(size)); // Overwrite the placeholder with the actual size
+    archive.write((const char*)(&size), sizeof(size)); // Overwrite the placeholder with the actual size
 
     // Move to the end of the file to append next file
     archive.seekp(0, std::ios::end);
@@ -63,17 +63,20 @@ void Archiver::zipSingle(std::fstream& archive, const std::string& file, const s
 void Archiver::zip(const std::string& archive_name, std::vector<std::string>& files, std::vector<std::string>& relative_paths)
 {
     // Create archive file
-    std::fstream archive(archive_name, std::ios::binary | std::ios::out);
+    std::ofstream archive_out(archive_name, std::ios::binary);
+    std::ifstream archive_in(archive_name, std::ios::binary);
 
-    if (!archive.is_open())
-        throw std::runtime_error("Failed to create archive");
+    if (!archive_out.is_open())
+        throw std::runtime_error("Failed to create archive for zipping");
+    if (!archive_in.is_open())
+        throw std::runtime_error("Failed to open archive for writing hash");
     
     // Append new content to the end of the file
-    archive.seekp(0, std::ios::end);
+    archive_out.seekp(0, std::ios::end);
 
     // Write the number of files to be written in the archive
     int num_files = files.size();
-    archive.write((char*)(&num_files), sizeof(num_files));
+    archive_out.write((char*)(&num_files), sizeof(num_files));
    
     // One iterator for the whole paths to open the files and one for the relative paths to write to the archive
     std::vector<std::string>::iterator file_it = files.begin();
@@ -82,10 +85,14 @@ void Archiver::zip(const std::string& archive_name, std::vector<std::string>& fi
     // Write the files to the archive
     for (; file_it != files.end(), rel_path_it != relative_paths.end(); ++file_it, ++rel_path_it)
     {
-        zipSingle(archive, *file_it, *rel_path_it);
+        zipSingle(archive_out, *file_it, *rel_path_it);
     }
+
+    hash(archive_in, archive_out); // Write the hash of the archive
+
     // All files have been compressed and written to the archive, close the archive
-    archive.close();
+    archive_in.close();
+    archive_out.close();
 }
 
 /** 
@@ -238,8 +245,17 @@ void Archiver::info(const std::string& archive_name)
     {
         int path_length;
         archive.read((char*)(&path_length), sizeof(path_length));
-
-        char* file_path = new char[path_length + 1];
+        char* file_path;
+        try
+        {
+            file_path = new char[path_length + 1];;
+        }
+        catch (const std::bad_alloc& e)
+        {
+            delete[] file_path;
+            std::cerr << "Cannot read file name in file " << Path::getFile(archive_name) << '\n';
+            return;
+        }
         archive.read(file_path, path_length);
         file_path[path_length] = '\0';
 
@@ -248,7 +264,7 @@ void Archiver::info(const std::string& archive_name)
         int file_size;
         archive.read((char*)(&file_size), sizeof(file_size));
 
-        std::cout << "size of compressed content: " << file_size << "\n";
+        std::cout << "Size of compressed content: " << file_size << "\n";
 
         delete[] file_path;
     }
@@ -270,7 +286,7 @@ void Archiver::refresh(const std::string& archive_name, std::set<std::string>& f
 
     // Create a new archive file
     std::string temp_archive_name = Path::getPath(archive_name) + "/temp_" + Path::getFile(archive_name);
-    std::fstream new_archive(temp_archive_name, std::ios::binary | std::ios::out);
+    std::ofstream new_archive(temp_archive_name, std::ios::binary);
 
     if (!new_archive.is_open())
         throw std::runtime_error("Failed to create temporary archive");
@@ -337,6 +353,9 @@ void Archiver::refresh(const std::string& archive_name, std::set<std::string>& f
         new_archive.write((char*)(&new_num_files), sizeof(new_num_files));
     }
 
+    // Section to write the hash of the archive
+    hash(archive, new_archive);
+
     // Closing the original archive
     archive.close();
 
@@ -354,46 +373,47 @@ void Archiver::refresh(const std::string& archive_name, std::set<std::string>& f
  * 
  * @param archive_name - absolute path to archive
  */
-void Archiver::errorCheck(const std::string& archive_name)
+bool Archiver::errorCheck(const std::string& archive_name)
 {
     std::ifstream archive(archive_name, std::ios::binary | std::ios::in);
 
     if (!archive.is_open())
-        throw std::runtime_error("Archive not found");
+        throw std::runtime_error("Failed to open archive");
 
-    int num_files;
-    archive.read((char*)(&num_files), sizeof(num_files));
-
-    for (int i = 0; i < num_files; ++i)
+    // Check if the hash is correct
+    archive.seekg(0, std::ios::end); // Move get pointer to the end to read the hash
+    int hash_size = 32; // Size of the hash
+    archive.seekg(-hash_size, std::ios::end); // Move get pointer to the start of the hash
+    int archive_size = archive.tellg(); // Size of the archive
+    char* archive_hash = new char[hash_size + 1]; // Buffer to store the hash
+    archive.read(archive_hash, hash_size);
+    archive_hash[hash_size] = '\0';
+    
+    if (strlen(archive_hash) != hash_size)
     {
-        int path_length;
-        archive.read((char*)(&path_length), sizeof(path_length));
-
-        char* file_path = new char[path_length + 1];
-        archive.read(file_path, path_length);
-        file_path[path_length] = '\0';
-
-        if (strlen(file_path) != path_length)
-            std::cerr << "Error found in archive: " << archive_name << " at position: " << archive.tellg() << "\n";
-        
-
-        int file_size;
-        archive.read((char*)(&file_size), sizeof(file_size));
-
-        char* buffer = new char[file_size];
-        archive.read(buffer, file_size);
-
-        if (strlen(buffer) != file_size)
-            std::cerr << "Error found in archive: " << archive_name << " at position: " << archive.tellg() << "\n";
-        
-
-        delete[] file_path;
-        delete[] buffer;
+        std::cerr << "Error: Hash not found in the archive or is damaged\n";
+        delete[] archive_hash;
+        archive.close();
+        return false;
     }
 
-    if (archive.peek() != EOF)
-        std::cerr << "Error found in archive: " << archive_name << " at position: " << archive.tellg() << "\n";
+    archive.seekg(0, std::ios::beg); // Move get pointer to the start of the file
+    char* archive_data = new char[archive_size + 1]; // Buffer to store the archive data
+    archive.read(archive_data, archive_size);
+    archive_data[archive_size] = '\0';
 
+    if (md5(archive_data) != archive_hash)
+    {
+        std::cerr << "Archive is damaged\n";
+        return false;
+    }
+    else
+    {
+        std::cout << "Archive is intact\n";
+    }
+
+    delete[] archive_data;
     archive.close();
     
+    return true;
 }

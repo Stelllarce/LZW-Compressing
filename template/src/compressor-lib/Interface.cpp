@@ -10,9 +10,9 @@ inline void Interface::display()
 inline void Interface::help()
 {
     std::cout << "Available commands:\n";
-    std::cout << "ZIP <path-to-future-archive> <file1 file2 directory1 ...> - compress a file(s) or/and a directory\n";
-    std::cout << "UNZIP <path-to-archive> <path-of-extraction> <files1 file2 ...>/(can use # to extract all) - decompress an archive\n";
-    std::cout << "INFO <path-to-archive> - display a list with compressed files\n";
+    std::cout << "ZIP <path-to-future-archive> <file1 file2 directory1 ...> - archive a file(s) or/and a directory\n";
+    std::cout << "UNZIP <path-to-archive> <path-of-extraction> <files1 file2 ...>/(can use * to extract all) - dearchive an archive\n";
+    std::cout << "INFO <path-to-archive> - display a list with archived files\n";
     std::cout << "REFRESH <path-to-archive> <file1 file2 ...> - refresh an archived file with its new version\n";
     std::cout << "EC <path-to-archive> - check for damaged file in an archive\n"; 
     std::cout << "EXIT - exit the program\n";
@@ -98,7 +98,7 @@ void Interface::run()
             std::set<std::string> files;
             while (ss >> file)
             {
-                if (file == "#") // Case when user wants to extract all files
+                if (file == "*") // Case when user wants to extract all files
                     break;
                 files.insert(file);
             }
