@@ -155,6 +155,7 @@ void Archiver::unzipSelected(std::ifstream& archive, const std::string& extract_
     // If name of file inside the archive is not among the listed names, skip
     if (files_to_extract.find(file_path) == files_to_extract.end())
     {
+        std::cerr << "File not found in the list of files to extract: " << file_path << '\n';
         archive.seekg(file_size, std::ios::cur);
         delete[] file_path;
         return;
@@ -380,29 +381,39 @@ bool Archiver::errorCheck(const std::string& archive_name)
     if (!archive.is_open())
         throw std::runtime_error("Failed to open archive");
 
+    archive.seekg(0, std::ios::end); // Move get pointer to the end of the file
+    std::streamsize failsafe = archive.tellg(); // Get the size of the archive
+
+    if (failsafe < 32)
+    {
+        std::cerr << "Error: Archive is too small to contain a hash\n";
+        archive.close();
+        return false;
+    }
+
     // Check if the hash is correct
-    archive.seekg(0, std::ios::end); // Move get pointer to the end to read the hash
-    int hash_size = 32; // Size of the hash
-    archive.seekg(-hash_size, std::ios::end); // Move get pointer to the start of the hash
-    int archive_size = archive.tellg(); // Size of the archive
-    char* archive_hash = new char[hash_size + 1]; // Buffer to store the hash
-    archive.read(archive_hash, hash_size);
-    archive_hash[hash_size] = '\0';
+    const std::streamsize HASH_SIZE = 32; // Size of the hash
+    archive.seekg(-HASH_SIZE, std::ios::end); // Move get pointer to the start of the hash
+    int archive_size = archive.tellg(); // Get the size of the archive
+    std::vector<char> hash_buff(HASH_SIZE);
+    archive.read(hash_buff.data(), HASH_SIZE);
+
+    std::string archive_hash(hash_buff.begin(), hash_buff.end());
     
-    if (strlen(archive_hash) != hash_size)
+    if (archive_hash.size() != HASH_SIZE)
     {
         std::cerr << "Error: Hash not found in the archive or is damaged\n";
-        delete[] archive_hash;
         archive.close();
         return false;
     }
 
     archive.seekg(0, std::ios::beg); // Move get pointer to the start of the file
-    char* archive_data = new char[archive_size + 1]; // Buffer to store the archive data
-    archive.read(archive_data, archive_size);
-    archive_data[archive_size] = '\0';
+    std::vector<char> buffer(archive_size);
+    archive.read(buffer.data(), archive_size); // Read the archive data into a buffer
+    std::string archive_data(buffer.begin(), buffer.end()); // Convert the buffer to a string
+    std::string curr_hash = md5(archive_data); 
 
-    if (md5(archive_data) != archive_hash)
+    if (curr_hash != archive_hash)
     {
         std::cerr << "Archive is damaged\n";
         return false;
@@ -412,7 +423,6 @@ bool Archiver::errorCheck(const std::string& archive_name)
         std::cout << "Archive is intact\n";
     }
 
-    delete[] archive_data;
     archive.close();
     
     return true;

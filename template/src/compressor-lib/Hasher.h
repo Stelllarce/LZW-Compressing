@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 #include "../md5-lib/md5.h"
 
 class Hasher {

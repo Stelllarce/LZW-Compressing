@@ -117,7 +117,17 @@ void Interface::run()
         {
             std::string archive_name;
             ss >> archive_name;
-            archiver.info(archive_name);
+            try
+            {
+                
+                archiver.info(archive_name);
+            }
+            catch(const std::runtime_error& e)
+            {
+                std::cerr << e.what() << '\n';
+                continue;
+            }
+            
         }
         else if (command == "REFRESH")
         {
@@ -142,7 +152,15 @@ void Interface::run()
         {
             std::string archive_name;
             ss >> archive_name;
-            archiver.errorCheck(archive_name);
+            try
+            {
+                archiver.errorCheck(archive_name);
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+                continue;
+            }
         }
         else if (command == "help")
         {
