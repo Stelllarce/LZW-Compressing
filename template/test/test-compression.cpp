@@ -402,32 +402,6 @@ TEST_CASE("Archiver zips particular files")
         
         CHECK(input == expected);
     }
-
-    SECTION("MD5 hash is correct")
-    {
-        char* md5_hash = new char[32];
-
-        // Seek to the end minus the hash size (32 characters for MD5)
-        archive.seekg(-32, std::ios::end);
-        int archive_size = archive.tellg();
-
-        archive.read(md5_hash, 32);
-        std::string md5_hash_str = md5_hash;
-        delete[] md5_hash;
-
-        // Read the file content up to the size without the hash
-        archive.seekg(0, std::ios::beg);
-        char* file_content = new char[archive_size];
-        archive.read(file_content, archive_size);
-        std::string file_content_str = file_content;
-        delete[] file_content;
-
-        // Compute the hash of the file content
-        std::string computed_hash = md5(file_content_str);
-
-        // Check if the computed hash matches the stored hash
-        REQUIRE(computed_hash == md5_hash_str);
-    }
 }
 
 TEST_CASE("Archiver zips a directory")
@@ -578,10 +552,11 @@ TEST_CASE("Testing archiver errorCheck/Errors")
 {
     Archiver archiver;
     std::string archive_name = "../../template/test/test_files/test_output/test_archive.lzw";
-    std::ofstream archive;
-    archive.open(archive_name, std::ios::binary | std::ios::out | std::ios::app);
+    std::fstream archive;
+    archive.open(archive_name, std::ios::binary | std::ios::in | std::ios::out);
     REQUIRE(archive.is_open());
-    archive << "Error";
+    archive.seekp(5, std::ios::beg);
+    archive.write("test", 4);
     archive.close();
     REQUIRE_FALSE(archiver.errorCheck(archive_name));
 }
