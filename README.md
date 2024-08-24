@@ -5,8 +5,25 @@
 ***Warning***: The project contains a bash scipt that executes on build of the cmake configuration. It may not work on Windows. Refer to the last few lines of the CMakeLists.txt file in `template/` for the script execute command and comment it out if necessary.
 
 1. Clone the repository
-2. Compile the project with the following command:
+2. Open the project folder (LZW-Compressing) inside a terminal 
+(Linux)
+3. Compile the project with the following command:
 ```bash
+    cd template/src && g++ application/main.cpp compressor-lib/*.cpp md5-lib/md5.cpp -o archiver
+    chmod +x archiver
+```
+4. Run the project with the following command:
+```bash
+    ./archiver
+```
+(Windows)
+3. Compile the project with the following command:
+```bash
+    cd template\\src && g++ application\\main.cpp compressor-lib\\*.cpp md5-lib\\md5.cpp -o archiver.exe
+```
+4. Run the project with the following command:
+```bash
+    archiver.exe
 ```
 
 ## Used libraries
@@ -30,4 +47,3 @@
 - [Another article about LZW compression](https://www.techtarget.com/whatis/definition/LZW-compression)
 - [Idea for cmake config to run the bash script](https://stackoverflow.com/questions/25687890/running-a-bash-command-via-cmake)
 - [Idea to use std::filesystem to traverse directories](https://stackoverflow.com/questions/67273/how-do-you-iterate-through-every-file-directory-recursively-in-standard-c)
-- [Idea to use std::filesystems to create direcotries]
